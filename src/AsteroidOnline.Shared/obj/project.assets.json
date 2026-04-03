@@ -1,11 +1,30 @@
 {
   "version": 3,
   "targets": {
-    "net10.0": {}
+    "net10.0": {
+      "AsteroidOnline.Domain/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v10.0",
+        "compile": {
+          "bin/placeholder/AsteroidOnline.Domain.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/AsteroidOnline.Domain.dll": {}
+        }
+      }
+    }
   },
-  "libraries": {},
+  "libraries": {
+    "AsteroidOnline.Domain/1.0.0": {
+      "type": "project",
+      "path": "../AsteroidOnline.Domain/AsteroidOnline.Domain.csproj",
+      "msbuildProject": "../AsteroidOnline.Domain/AsteroidOnline.Domain.csproj"
+    }
+  },
   "projectFileDependencyGroups": {
-    "net10.0": []
+    "net10.0": [
+      "AsteroidOnline.Domain >= 1.0.0"
+    ]
   },
   "packageFolders": {
     "/home/evan/.nuget/packages/": {}
@@ -32,7 +51,11 @@
       "frameworks": {
         "net10.0": {
           "targetAlias": "net10.0",
-          "projectReferences": {}
+          "projectReferences": {
+            "/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Domain/AsteroidOnline.Domain.csproj": {
+              "projectPath": "/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Domain/AsteroidOnline.Domain.csproj"
+            }
+          }
         }
       },
       "warningProperties": {

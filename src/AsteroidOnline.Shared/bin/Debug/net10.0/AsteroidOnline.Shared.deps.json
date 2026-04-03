@@ -7,14 +7,30 @@
   "targets": {
     ".NETCoreApp,Version=v10.0": {
       "AsteroidOnline.Shared/1.0.0": {
+        "dependencies": {
+          "AsteroidOnline.Domain": "1.0.0"
+        },
         "runtime": {
           "AsteroidOnline.Shared.dll": {}
+        }
+      },
+      "AsteroidOnline.Domain/1.0.0": {
+        "runtime": {
+          "AsteroidOnline.Domain.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
         }
       }
     }
   },
   "libraries": {
     "AsteroidOnline.Shared/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "AsteroidOnline.Domain/1.0.0": {
       "type": "project",
       "serviceable": false,
       "sha512": ""

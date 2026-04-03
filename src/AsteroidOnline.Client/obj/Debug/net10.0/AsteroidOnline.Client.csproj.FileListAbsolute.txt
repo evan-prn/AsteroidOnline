@@ -76,3 +76,9 @@
 /home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Client/obj/Debug/net10.0/AsteroidOnline.Client.pdb
 /home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Client/obj/Debug/net10.0/AsteroidOnline.Client.genruntimeconfig.cache
 /home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Client/obj/Debug/net10.0/ref/AsteroidOnline.Client.dll
+/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Client/bin/Debug/net10.0/AsteroidOnline.Domain.dll
+/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Client/bin/Debug/net10.0/AsteroidOnline.GameLogic.dll
+/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Client/bin/Debug/net10.0/AsteroidOnline.Infrastructure.dll
+/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Client/bin/Debug/net10.0/AsteroidOnline.Infrastructure.pdb
+/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Client/bin/Debug/net10.0/AsteroidOnline.Domain.pdb
+/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Client/bin/Debug/net10.0/AsteroidOnline.GameLogic.pdb

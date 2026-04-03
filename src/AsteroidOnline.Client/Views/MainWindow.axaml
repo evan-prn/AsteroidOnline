@@ -3,18 +3,23 @@
         xmlns:vm="using:AsteroidOnline.Client.ViewModels"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
         x:Class="AsteroidOnline.Client.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
         Icon="/Assets/avalonia-logo.ico"
-        Title="AsteroidOnline.Client">
+        Title="AsteroidOnline"
+        Width="800" Height="600"
+        MinWidth="640" MinHeight="480"
+        Background="#0A0A1A">
 
     <Design.DataContext>
-        <!-- This only sets the DataContext for the previewer in an IDE,
-             to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
-        <vm:MainWindowViewModel/>
+        <vm:MainWindowViewModel />
     </Design.DataContext>
 
-    <TextBlock Text="{Binding Greeting}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+    <!--
+        ContentControl central : le ViewLocator résout automatiquement
+        la vue correspondant au ViewModel courant (ConnectView, LobbyView, GameView…).
+    -->
+    <ContentControl Content="{Binding CurrentViewModel}" />
 
 </Window>

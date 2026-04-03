@@ -10,3 +10,7 @@
 /home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Shared/obj/Debug/net10.0/refint/AsteroidOnline.Shared.dll
 /home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Shared/obj/Debug/net10.0/AsteroidOnline.Shared.pdb
 /home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Shared/obj/Debug/net10.0/ref/AsteroidOnline.Shared.dll
+/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Shared/bin/Debug/net10.0/AsteroidOnline.Domain.dll
+/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Shared/bin/Debug/net10.0/AsteroidOnline.Domain.pdb
+/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Shared/obj/Debug/net10.0/AsteroidOnline.Shared.csproj.AssemblyReference.cache
+/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Shared/obj/Debug/net10.0/Asteroid.CC78198E.Up2Date

@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("AsteroidOnline.GameLogic")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+8e2fb9b77e718ddfe94861fd7b09b99a1649781e")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+3ac7d6313b957f457fc6e466f179975fce622c89")]
 [assembly: System.Reflection.AssemblyProductAttribute("AsteroidOnline.GameLogic")]
 [assembly: System.Reflection.AssemblyTitleAttribute("AsteroidOnline.GameLogic")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

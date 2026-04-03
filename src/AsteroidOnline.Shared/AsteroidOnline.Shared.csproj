@@ -1,9 +1,14 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
+
+  <!-- Shared dépend de Domain pour accéder à PlayerColor et aux entités partagées -->
+  <ItemGroup>
+    <ProjectReference Include="..\AsteroidOnline.Domain\AsteroidOnline.Domain.csproj" />
+  </ItemGroup>
 
 </Project>

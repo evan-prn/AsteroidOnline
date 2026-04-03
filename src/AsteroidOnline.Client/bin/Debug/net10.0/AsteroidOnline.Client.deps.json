@@ -8,14 +8,14 @@
     ".NETCoreApp,Version=v10.0": {
       "AsteroidOnline.Client/1.0.0": {
         "dependencies": {
+          "AsteroidOnline.Infrastructure": "1.0.0",
           "AsteroidOnline.Shared": "1.0.0",
           "Avalonia": "11.3.12",
           "Avalonia.Desktop": "11.3.12",
           "Avalonia.Diagnostics": "11.3.12",
           "Avalonia.Fonts.Inter": "11.3.12",
           "Avalonia.Themes.Fluent": "11.3.12",
-          "CommunityToolkit.Mvvm": "8.2.1",
-          "LiteNetLib": "2.1.2"
+          "CommunityToolkit.Mvvm": "8.2.1"
         },
         "runtime": {
           "AsteroidOnline.Client.dll": {}
@@ -445,7 +445,43 @@
           }
         }
       },
+      "AsteroidOnline.Domain/1.0.0": {
+        "runtime": {
+          "AsteroidOnline.Domain.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      },
+      "AsteroidOnline.GameLogic/1.0.0": {
+        "dependencies": {
+          "AsteroidOnline.Domain": "1.0.0",
+          "AsteroidOnline.Shared": "1.0.0"
+        },
+        "runtime": {
+          "AsteroidOnline.GameLogic.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      },
+      "AsteroidOnline.Infrastructure/1.0.0": {
+        "dependencies": {
+          "AsteroidOnline.GameLogic": "1.0.0",
+          "AsteroidOnline.Shared": "1.0.0",
+          "LiteNetLib": "2.1.2"
+        },
+        "runtime": {
+          "AsteroidOnline.Infrastructure.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      },
       "AsteroidOnline.Shared/1.0.0": {
+        "dependencies": {
+          "AsteroidOnline.Domain": "1.0.0"
+        },
         "runtime": {
           "AsteroidOnline.Shared.dll": {
             "assemblyVersion": "1.0.0.0",
@@ -642,6 +678,21 @@
       "sha512": "sha512-ScSMrUrrw8px4kK1Glh0fZv/HQUlg1078bNXNPfRPKQ3WbRzV9HpsydYEOgSoMK5LWICMf2bMwIFH0pGjxjcMA==",
       "path": "tmds.dbus.protocol/0.21.2",
       "hashPath": "tmds.dbus.protocol.0.21.2.nupkg.sha512"
+    },
+    "AsteroidOnline.Domain/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "AsteroidOnline.GameLogic/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "AsteroidOnline.Infrastructure/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
     },
     "AsteroidOnline.Shared/1.0.0": {
       "type": "project",

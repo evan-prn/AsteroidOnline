@@ -57,6 +57,9 @@
         }
       },
       "AsteroidOnline.Shared/1.0.0": {
+        "dependencies": {
+          "AsteroidOnline.Domain": "1.0.0"
+        },
         "runtime": {
           "AsteroidOnline.Shared.dll": {
             "assemblyVersion": "1.0.0.0",

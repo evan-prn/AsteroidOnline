@@ -26,5 +26,11 @@ build_property.EnableCodeStyleSeverity =
 [/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Client/App.axaml]
 build_metadata.AdditionalFiles.SourceItemGroup = AvaloniaXaml
 
+[/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Client/Views/ConnectView.axaml]
+build_metadata.AdditionalFiles.SourceItemGroup = AvaloniaXaml
+
+[/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Client/Views/LobbyView.axaml]
+build_metadata.AdditionalFiles.SourceItemGroup = AvaloniaXaml
+
 [/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Client/Views/MainWindow.axaml]
 build_metadata.AdditionalFiles.SourceItemGroup = AvaloniaXaml
