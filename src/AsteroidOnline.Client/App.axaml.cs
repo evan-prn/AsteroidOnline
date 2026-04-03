@@ -27,6 +27,12 @@ public partial class App : Application
     private NavigationService?     _navigationService;
     private MainWindowViewModel?   _mainWindowViewModel;
 
+    // Timer global de polling réseau — actif en permanence pour que les paquets
+    // soient traités quelle que soit la vue courante (ConnectView, LobbyView…).
+    // GameViewModel appelle aussi PollEvents() dans sa propre boucle, ce double
+    // appel est sans danger (LiteNetLib est idempotent sur PollEvents).
+    private DispatcherTimer? _networkPollTimer;
+
     /// <inheritdoc/>
     public override void Initialize()
     {
@@ -59,11 +65,24 @@ public partial class App : Application
                 DataContext = _mainWindowViewModel,
             };
 
+            // ── Timer de polling réseau global (60 Hz) ───────────────────────
+            // Garantit que PollEvents() est appelé à chaque frame quelle que
+            // soit la vue affichée (ConnectView, LobbyView, GameView…).
+            _networkPollTimer = new DispatcherTimer(
+                TimeSpan.FromMilliseconds(16),
+                DispatcherPriority.Background,
+                (_, _) => _networkService!.PollEvents());
+            _networkPollTimer.Start();
+
             // ── Navigation initiale vers l'écran de connexion (US-01) ────────
             _navigationService.NavigateTo<ConnectViewModel>();
 
             // Arrêt propre du service réseau à la fermeture de l'application.
-            desktop.Exit += (_, _) => _networkService.Dispose();
+            desktop.Exit += (_, _) =>
+            {
+                _networkPollTimer.Stop();
+                _networkService.Dispose();
+            };
         }
 
         base.OnFrameworkInitializationCompleted();
