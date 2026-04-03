@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("AsteroidOnline.Server")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+d5bd06cff7f005b16b741f6935d07402aaca0069")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+b7e587c607ea7f299cba486d6daa400ad2dc0c86")]
 [assembly: System.Reflection.AssemblyProductAttribute("AsteroidOnline.Server")]
 [assembly: System.Reflection.AssemblyTitleAttribute("AsteroidOnline.Server")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

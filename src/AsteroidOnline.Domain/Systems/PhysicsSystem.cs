@@ -31,8 +31,9 @@ public class PhysicsSystem
         // Déplacement selon la vélocité courante
         entity.Position += entity.Velocity * deltaTime;
 
-        // Amortissement
-        entity.Velocity *= DragCoefficient;
+        // Pas d'amortissement ici : les astéroïdes et projectiles conservent
+        // leur vélocité constante. L'amortissement n'est appliqué qu'aux vaisseaux
+        // (voir surcharge Tick(Ship, ...)).
 
         // Wrap-around toroïdal (US-12)
         ApplyWrapAround(entity, in bounds);
