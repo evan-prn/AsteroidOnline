@@ -1,0 +1,12 @@
+/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Shared/bin/Debug/net10.0/AsteroidOnline.Shared.deps.json
+/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Shared/bin/Debug/net10.0/AsteroidOnline.Shared.dll
+/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Shared/bin/Debug/net10.0/AsteroidOnline.Shared.pdb
+/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Shared/obj/Debug/net10.0/AsteroidOnline.Shared.GeneratedMSBuildEditorConfig.editorconfig
+/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Shared/obj/Debug/net10.0/AsteroidOnline.Shared.AssemblyInfoInputs.cache
+/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Shared/obj/Debug/net10.0/AsteroidOnline.Shared.AssemblyInfo.cs
+/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Shared/obj/Debug/net10.0/AsteroidOnline.Shared.csproj.CoreCompileInputs.cache
+/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Shared/obj/Debug/net10.0/AsteroidOnline.Shared.sourcelink.json
+/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Shared/obj/Debug/net10.0/AsteroidOnline.Shared.dll
+/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Shared/obj/Debug/net10.0/refint/AsteroidOnline.Shared.dll
+/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Shared/obj/Debug/net10.0/AsteroidOnline.Shared.pdb
+/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Shared/obj/Debug/net10.0/ref/AsteroidOnline.Shared.dll

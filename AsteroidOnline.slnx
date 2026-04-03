@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/AsteroidOnline.Client/AsteroidOnline.Client.csproj" />
+    <Project Path="src/AsteroidOnline.Domain/AsteroidOnline.Domain.csproj" />
+    <Project Path="src/AsteroidOnline.GameLogic/AsteroidOnline.GameLogic.csproj" />
+    <Project Path="src/AsteroidOnline.Infrastructure/AsteroidOnline.Infrastructure.csproj" />
+    <Project Path="src/AsteroidOnline.Server/AsteroidOnline.Server.csproj" />
+    <Project Path="src/AsteroidOnline.Shared/AsteroidOnline.Shared.csproj" />
+  </Folder>
+</Solution>

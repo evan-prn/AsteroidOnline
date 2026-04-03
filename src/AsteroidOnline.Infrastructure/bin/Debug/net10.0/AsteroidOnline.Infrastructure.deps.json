@@ -1,0 +1,86 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v10.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v10.0": {
+      "AsteroidOnline.Infrastructure/1.0.0": {
+        "dependencies": {
+          "AsteroidOnline.GameLogic": "1.0.0",
+          "AsteroidOnline.Shared": "1.0.0",
+          "LiteNetLib": "2.1.2"
+        },
+        "runtime": {
+          "AsteroidOnline.Infrastructure.dll": {}
+        }
+      },
+      "LiteNetLib/2.1.2": {
+        "runtime": {
+          "lib/net8.0/LiteNetLib.dll": {
+            "assemblyVersion": "2.1.2.0",
+            "fileVersion": "2.1.2.0"
+          }
+        }
+      },
+      "AsteroidOnline.Domain/1.0.0": {
+        "runtime": {
+          "AsteroidOnline.Domain.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      },
+      "AsteroidOnline.GameLogic/1.0.0": {
+        "dependencies": {
+          "AsteroidOnline.Domain": "1.0.0",
+          "AsteroidOnline.Shared": "1.0.0"
+        },
+        "runtime": {
+          "AsteroidOnline.GameLogic.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      },
+      "AsteroidOnline.Shared/1.0.0": {
+        "runtime": {
+          "AsteroidOnline.Shared.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      }
+    }
+  },
+  "libraries": {
+    "AsteroidOnline.Infrastructure/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "LiteNetLib/2.1.2": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-+bmu7Vj+ik3xGX+qubsFuGSR8Pdri4Og7D9YAer83vHotkSHNLYL5bkZNgpvsK8GrcdNOUabZhqbYtmHu8as7A==",
+      "path": "litenetlib/2.1.2",
+      "hashPath": "litenetlib.2.1.2.nupkg.sha512"
+    },
+    "AsteroidOnline.Domain/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "AsteroidOnline.GameLogic/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "AsteroidOnline.Shared/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}

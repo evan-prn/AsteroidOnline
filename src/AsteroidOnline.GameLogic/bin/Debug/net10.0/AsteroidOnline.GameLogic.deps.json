@@ -1,0 +1,53 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v10.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v10.0": {
+      "AsteroidOnline.GameLogic/1.0.0": {
+        "dependencies": {
+          "AsteroidOnline.Domain": "1.0.0",
+          "AsteroidOnline.Shared": "1.0.0"
+        },
+        "runtime": {
+          "AsteroidOnline.GameLogic.dll": {}
+        }
+      },
+      "AsteroidOnline.Domain/1.0.0": {
+        "runtime": {
+          "AsteroidOnline.Domain.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      },
+      "AsteroidOnline.Shared/1.0.0": {
+        "runtime": {
+          "AsteroidOnline.Shared.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      }
+    }
+  },
+  "libraries": {
+    "AsteroidOnline.GameLogic/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "AsteroidOnline.Domain/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "AsteroidOnline.Shared/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}

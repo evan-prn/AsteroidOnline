@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "dgSpecHash": "gacvGCYADLs=",
+  "success": true,
+  "projectFilePath": "/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Server/AsteroidOnline.Server.csproj",
+  "expectedPackageFiles": [
+    "/home/evan/.nuget/packages/litenetlib/2.1.2/litenetlib.2.1.2.nupkg.sha512"
+  ],
+  "logs": []
+}
