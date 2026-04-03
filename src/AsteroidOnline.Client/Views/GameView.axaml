@@ -1,0 +1,110 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:AsteroidOnline.Client.ViewModels"
+             xmlns:conv="using:AsteroidOnline.Client.Converters"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="1280" d:DesignHeight="720"
+             x:Class="AsteroidOnline.Client.Views.GameView"
+             x:DataType="vm:GameViewModel"
+             Background="#05050F"
+             Focusable="True">
+
+  <Grid>
+
+    <!-- ══ Canvas de jeu ════════════════════════════════════════════════════ -->
+    <Canvas x:Name="GameCanvas" Background="#05050F"
+            HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+
+    <!-- ══ HUD Overlay ══════════════════════════════════════════════════════ -->
+    <Panel IsHitTestVisible="False">
+
+      <!-- ── Haut gauche : joueurs vivants ──────────────────────────────── -->
+      <Border HorizontalAlignment="Left" VerticalAlignment="Top"
+              Margin="16" Padding="10,6" CornerRadius="6"
+              Background="#CC000010" BorderBrush="#33FFFFFF" BorderThickness="1">
+        <StackPanel Orientation="Horizontal" Spacing="6">
+          <TextBlock Text="&#128101;" FontSize="14" />
+          <TextBlock FontSize="14" Foreground="White">
+            <TextBlock.Text>
+              <MultiBinding StringFormat="{}{0} joueur(s)">
+                <Binding Path="AlivePlayersCount" />
+              </MultiBinding>
+            </TextBlock.Text>
+          </TextBlock>
+        </StackPanel>
+      </Border>
+
+      <!-- ── Haut droite : score + rang ────────────────────────────────── -->
+      <Border HorizontalAlignment="Right" VerticalAlignment="Top"
+              Margin="16" Padding="10,6" CornerRadius="6"
+              Background="#CC000010" BorderBrush="#33FFFFFF" BorderThickness="1">
+        <StackPanel Spacing="2" HorizontalAlignment="Right">
+          <TextBlock FontSize="13" Foreground="#AACCFF" HorizontalAlignment="Right">
+            <TextBlock.Text>
+              <MultiBinding StringFormat="Score : {0}">
+                <Binding Path="MyScore" />
+              </MultiBinding>
+            </TextBlock.Text>
+          </TextBlock>
+          <TextBlock FontSize="11" Foreground="#7799BB" HorizontalAlignment="Right">
+            <TextBlock.Text>
+              <MultiBinding StringFormat="Rang #{0}">
+                <Binding Path="MyRank" />
+              </MultiBinding>
+            </TextBlock.Text>
+          </TextBlock>
+        </StackPanel>
+      </Border>
+
+      <!-- ── Centre haut : feed d'éliminations (US-24) ─────────────────── -->
+      <Border HorizontalAlignment="Center" VerticalAlignment="Top"
+              Margin="0,16,0,0" Padding="12,6" CornerRadius="6"
+              Background="#CC220010" BorderBrush="#55FF4444" BorderThickness="1"
+              IsVisible="{Binding ShowEliminationFeed}">
+        <TextBlock Text="{Binding EliminationFeedText}"
+                   Foreground="#FF8888" FontSize="14" FontWeight="SemiBold" />
+      </Border>
+
+      <!-- ── Bas gauche : barre de recharge du dash (US-11) ─────────────── -->
+      <Border HorizontalAlignment="Left" VerticalAlignment="Bottom"
+              Margin="16" Padding="10,8" CornerRadius="6"
+              Background="#CC000010" BorderBrush="#33FFFFFF" BorderThickness="1">
+        <StackPanel Spacing="4" Width="140">
+
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <TextBlock Text="DASH" FontSize="11" FontWeight="Bold" LetterSpacing="2"
+                       Foreground="{Binding IsDashReady,
+                           Converter={x:Static conv:BoolToColorConverter.Instance},
+                           ConverterParameter='#00CFFF|#445566'}" />
+            <TextBlock Text="[SHIFT/E]" FontSize="10" Foreground="#445566" />
+          </StackPanel>
+
+          <Border Height="6" CornerRadius="3" Background="#1E3A5F">
+            <Border HorizontalAlignment="Left" Height="6" CornerRadius="3"
+                    Width="{Binding DashCooldownProgress,
+                            Converter={x:Static conv:ProgressToWidthConverter.Instance},
+                            ConverterParameter='136'}"
+                    Background="{Binding IsDashReady,
+                        Converter={x:Static conv:BoolToColorConverter.Instance},
+                        ConverterParameter='#00CFFF|#224455'}" />
+          </Border>
+
+        </StackPanel>
+      </Border>
+
+      <!-- ── Bas droite : contrôles (rappel) ────────────────────────────── -->
+      <Border HorizontalAlignment="Right" VerticalAlignment="Bottom"
+              Margin="16" Padding="10,8" CornerRadius="6"
+              Background="#88000010" BorderBrush="#22FFFFFF" BorderThickness="1">
+        <StackPanel Spacing="2">
+          <TextBlock Text="WASD / Flèches  Piloter"   FontSize="11" Foreground="#556677" />
+          <TextBlock Text="ESPACE / F        Tirer"   FontSize="11" Foreground="#556677" />
+          <TextBlock Text="SHIFT / E          Dash"   FontSize="11" Foreground="#556677" />
+        </StackPanel>
+      </Border>
+
+    </Panel>
+
+  </Grid>
+</UserControl>

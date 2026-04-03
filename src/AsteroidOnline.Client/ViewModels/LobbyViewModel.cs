@@ -126,8 +126,9 @@ public partial class LobbyViewModel : ViewModelBase
 
             if (packet.SecondsRemaining == 0)
             {
-                // La navigation vers GameViewModel sera implémentée dans BLOC 7.
                 _networkService.PacketReceived -= OnPacketReceived;
+                // Navigation vers l'écran de jeu (US-31)
+                _navigationService.NavigateTo<GameViewModel>();
             }
         });
     }

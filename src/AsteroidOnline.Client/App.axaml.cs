@@ -84,6 +84,9 @@ public partial class App : Application
         if (type == typeof(LobbyViewModel))
             return new LobbyViewModel(_networkService!, _navigationService!);
 
+        if (type == typeof(GameViewModel))
+            return new GameViewModel(_networkService!, _navigationService!);
+
         throw new InvalidOperationException(
             $"[App] ViewModel non enregistré dans la factory : {type.FullName}");
     }

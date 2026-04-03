@@ -24,3 +24,15 @@
 /home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Server/obj/Debug/net10.0/ref/AsteroidOnline.Server.dll
 /home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Server/bin/Debug/net10.0/AsteroidOnline.GameLogic.dll
 /home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Server/bin/Debug/net10.0/AsteroidOnline.GameLogic.pdb
+/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Server/bin/Debug/net10.0/Microsoft.Extensions.Configuration.dll
+/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Server/bin/Debug/net10.0/Microsoft.Extensions.Configuration.Abstractions.dll
+/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Server/bin/Debug/net10.0/Microsoft.Extensions.Configuration.Binder.dll
+/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Server/bin/Debug/net10.0/Microsoft.Extensions.DependencyInjection.dll
+/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Server/bin/Debug/net10.0/Microsoft.Extensions.DependencyInjection.Abstractions.dll
+/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Server/bin/Debug/net10.0/Microsoft.Extensions.Logging.dll
+/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Server/bin/Debug/net10.0/Microsoft.Extensions.Logging.Abstractions.dll
+/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Server/bin/Debug/net10.0/Microsoft.Extensions.Logging.Configuration.dll
+/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Server/bin/Debug/net10.0/Microsoft.Extensions.Logging.Console.dll
+/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Server/bin/Debug/net10.0/Microsoft.Extensions.Options.dll
+/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Server/bin/Debug/net10.0/Microsoft.Extensions.Options.ConfigurationExtensions.dll
+/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Server/bin/Debug/net10.0/Microsoft.Extensions.Primitives.dll
