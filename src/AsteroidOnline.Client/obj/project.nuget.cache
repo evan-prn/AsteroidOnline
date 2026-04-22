@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "jg0Z9igElrg=",
+  "dgSpecHash": "Axhmam59gCA=",
   "success": true,
-  "projectFilePath": "/home/evan/Téléchargements/AsteroidOnlineV2/src/AsteroidOnline.Client/AsteroidOnline.Client.csproj",
+  "projectFilePath": "/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Client/AsteroidOnline.Client.csproj",
   "expectedPackageFiles": [
     "/home/evan/.nuget/packages/avalonia/11.3.12/avalonia.11.3.12.nupkg.sha512",
     "/home/evan/.nuget/packages/avalonia.angle.windows.natives/2.1.25547.20250602/avalonia.angle.windows.natives.2.1.25547.20250602.nupkg.sha512",
@@ -39,9 +39,9 @@
       "code": "NU1903",
       "level": "Warning",
       "message": "Le package 'Tmds.DBus.Protocol' 0.21.2 présente une vulnérabilité de gravité élevé(e) connue, https://github.com/advisories/GHSA-xrw6-gwf8-vvr9.",
-      "projectPath": "/home/evan/Téléchargements/AsteroidOnlineV2/src/AsteroidOnline.Client/AsteroidOnline.Client.csproj",
+      "projectPath": "/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Client/AsteroidOnline.Client.csproj",
       "warningLevel": 1,
-      "filePath": "/home/evan/Téléchargements/AsteroidOnlineV2/src/AsteroidOnline.Client/AsteroidOnline.Client.csproj",
+      "filePath": "/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Client/AsteroidOnline.Client.csproj",
       "libraryId": "Tmds.DBus.Protocol",
       "targetGraphs": [
         "net10.0"

@@ -2,7 +2,6 @@ namespace AsteroidOnline.Domain.Systems;
 
 using System.Numerics;
 using AsteroidOnline.Domain.Entities;
-using AsteroidOnline.Domain.Events;
 
 /// <summary>
 /// Système de détection de collisions cercle-cercle (US-15, US-22).

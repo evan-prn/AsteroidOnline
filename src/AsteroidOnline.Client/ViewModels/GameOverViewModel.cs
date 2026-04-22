@@ -6,7 +6,7 @@ using AsteroidOnline.Shared.Packets;
 namespace AsteroidOnline.Client.ViewModels;
 
 /// <summary>
-/// ViewModel de l'ecran de fin de partie.
+/// ViewModel de l'écran de fin de partie.
 /// </summary>
 public partial class GameOverViewModel : ViewModelBase
 {

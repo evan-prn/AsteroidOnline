@@ -16,9 +16,9 @@ using AsteroidOnline.Shared.Packets;
 namespace AsteroidOnline.Client.ViewModels;
 
 /// <summary>
-/// ViewModel de l'ecran de jeu principal.
-/// Gere la boucle cliente a 60 Hz, l'envoi des inputs UDP,
-/// la reception des snapshots serveur, le rendu canvas et le HUD.
+/// ViewModel de l'écran de jeu principal.
+/// Gère la boucle cliente à 60 Hz, l'envoi des inputs UDP,
+/// la réception des snapshots serveur, le rendu canvas et le HUD.
 /// </summary>
 public partial class GameViewModel : ViewModelBase, IDisposable
 {
@@ -193,7 +193,7 @@ public partial class GameViewModel : ViewModelBase, IDisposable
 
         Dispatcher.UIThread.Post(() =>
         {
-            EliminationFeedText = $"{packet.KillerName} a elimine {packet.VictimName}";
+            EliminationFeedText = $"{packet.KillerName} a éliminé {packet.VictimName}";
             ShowEliminationFeed = true;
 
             var timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(4) };

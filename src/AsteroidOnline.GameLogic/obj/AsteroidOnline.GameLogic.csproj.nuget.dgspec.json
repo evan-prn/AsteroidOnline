@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "/home/evan/Téléchargements/AsteroidOnlineV2/src/AsteroidOnline.GameLogic/AsteroidOnline.GameLogic.csproj": {}
+    "/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.GameLogic/AsteroidOnline.GameLogic.csproj": {}
   },
   "projects": {
-    "/home/evan/Téléchargements/AsteroidOnlineV2/src/AsteroidOnline.Domain/AsteroidOnline.Domain.csproj": {
+    "/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Domain/AsteroidOnline.Domain.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/home/evan/Téléchargements/AsteroidOnlineV2/src/AsteroidOnline.Domain/AsteroidOnline.Domain.csproj",
+        "projectUniqueName": "/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Domain/AsteroidOnline.Domain.csproj",
         "projectName": "AsteroidOnline.Domain",
-        "projectPath": "/home/evan/Téléchargements/AsteroidOnlineV2/src/AsteroidOnline.Domain/AsteroidOnline.Domain.csproj",
+        "projectPath": "/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Domain/AsteroidOnline.Domain.csproj",
         "packagesPath": "/home/evan/.nuget/packages/",
-        "outputPath": "/home/evan/Téléchargements/AsteroidOnlineV2/src/AsteroidOnline.Domain/obj/",
+        "outputPath": "/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Domain/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "/home/evan/.nuget/NuGet/NuGet.Config"
@@ -338,14 +338,14 @@
         }
       }
     },
-    "/home/evan/Téléchargements/AsteroidOnlineV2/src/AsteroidOnline.GameLogic/AsteroidOnline.GameLogic.csproj": {
+    "/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.GameLogic/AsteroidOnline.GameLogic.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/home/evan/Téléchargements/AsteroidOnlineV2/src/AsteroidOnline.GameLogic/AsteroidOnline.GameLogic.csproj",
+        "projectUniqueName": "/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.GameLogic/AsteroidOnline.GameLogic.csproj",
         "projectName": "AsteroidOnline.GameLogic",
-        "projectPath": "/home/evan/Téléchargements/AsteroidOnlineV2/src/AsteroidOnline.GameLogic/AsteroidOnline.GameLogic.csproj",
+        "projectPath": "/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.GameLogic/AsteroidOnline.GameLogic.csproj",
         "packagesPath": "/home/evan/.nuget/packages/",
-        "outputPath": "/home/evan/Téléchargements/AsteroidOnlineV2/src/AsteroidOnline.GameLogic/obj/",
+        "outputPath": "/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.GameLogic/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "/home/evan/.nuget/NuGet/NuGet.Config"
@@ -361,11 +361,11 @@
           "net10.0": {
             "targetAlias": "net10.0",
             "projectReferences": {
-              "/home/evan/Téléchargements/AsteroidOnlineV2/src/AsteroidOnline.Domain/AsteroidOnline.Domain.csproj": {
-                "projectPath": "/home/evan/Téléchargements/AsteroidOnlineV2/src/AsteroidOnline.Domain/AsteroidOnline.Domain.csproj"
+              "/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Domain/AsteroidOnline.Domain.csproj": {
+                "projectPath": "/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Domain/AsteroidOnline.Domain.csproj"
               },
-              "/home/evan/Téléchargements/AsteroidOnlineV2/src/AsteroidOnline.Shared/AsteroidOnline.Shared.csproj": {
-                "projectPath": "/home/evan/Téléchargements/AsteroidOnlineV2/src/AsteroidOnline.Shared/AsteroidOnline.Shared.csproj"
+              "/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Shared/AsteroidOnline.Shared.csproj": {
+                "projectPath": "/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Shared/AsteroidOnline.Shared.csproj"
               }
             }
           }
@@ -679,14 +679,14 @@
         }
       }
     },
-    "/home/evan/Téléchargements/AsteroidOnlineV2/src/AsteroidOnline.Shared/AsteroidOnline.Shared.csproj": {
+    "/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Shared/AsteroidOnline.Shared.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/home/evan/Téléchargements/AsteroidOnlineV2/src/AsteroidOnline.Shared/AsteroidOnline.Shared.csproj",
+        "projectUniqueName": "/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Shared/AsteroidOnline.Shared.csproj",
         "projectName": "AsteroidOnline.Shared",
-        "projectPath": "/home/evan/Téléchargements/AsteroidOnlineV2/src/AsteroidOnline.Shared/AsteroidOnline.Shared.csproj",
+        "projectPath": "/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Shared/AsteroidOnline.Shared.csproj",
         "packagesPath": "/home/evan/.nuget/packages/",
-        "outputPath": "/home/evan/Téléchargements/AsteroidOnlineV2/src/AsteroidOnline.Shared/obj/",
+        "outputPath": "/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Shared/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "/home/evan/.nuget/NuGet/NuGet.Config"
@@ -702,8 +702,8 @@
           "net10.0": {
             "targetAlias": "net10.0",
             "projectReferences": {
-              "/home/evan/Téléchargements/AsteroidOnlineV2/src/AsteroidOnline.Domain/AsteroidOnline.Domain.csproj": {
-                "projectPath": "/home/evan/Téléchargements/AsteroidOnlineV2/src/AsteroidOnline.Domain/AsteroidOnline.Domain.csproj"
+              "/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Domain/AsteroidOnline.Domain.csproj": {
+                "projectPath": "/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Domain/AsteroidOnline.Domain.csproj"
               }
             }
           }

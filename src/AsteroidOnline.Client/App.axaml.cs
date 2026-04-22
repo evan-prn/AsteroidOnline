@@ -108,9 +108,6 @@ public partial class App : Application
         if (type == typeof(GameViewModel))
             return new GameViewModel(_networkService!, _navigationService!, _playerSession!);
 
-        if (type == typeof(GameOverViewModel))
-            return new GameOverViewModel(_navigationService!, _networkService!, "Personne", 0, isSoloMode: false);
-
         throw new InvalidOperationException(
             $"[App] ViewModel non enregistré dans la factory : {type.FullName}");
     }

@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "/home/evan/Téléchargements/AsteroidOnlineV2/src/AsteroidOnline.Domain/AsteroidOnline.Domain.csproj": {}
+    "/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Domain/AsteroidOnline.Domain.csproj": {}
   },
   "projects": {
-    "/home/evan/Téléchargements/AsteroidOnlineV2/src/AsteroidOnline.Domain/AsteroidOnline.Domain.csproj": {
+    "/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Domain/AsteroidOnline.Domain.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/home/evan/Téléchargements/AsteroidOnlineV2/src/AsteroidOnline.Domain/AsteroidOnline.Domain.csproj",
+        "projectUniqueName": "/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Domain/AsteroidOnline.Domain.csproj",
         "projectName": "AsteroidOnline.Domain",
-        "projectPath": "/home/evan/Téléchargements/AsteroidOnlineV2/src/AsteroidOnline.Domain/AsteroidOnline.Domain.csproj",
+        "projectPath": "/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Domain/AsteroidOnline.Domain.csproj",
         "packagesPath": "/home/evan/.nuget/packages/",
-        "outputPath": "/home/evan/Téléchargements/AsteroidOnlineV2/src/AsteroidOnline.Domain/obj/",
+        "outputPath": "/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Domain/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "/home/evan/.nuget/NuGet/NuGet.Config"

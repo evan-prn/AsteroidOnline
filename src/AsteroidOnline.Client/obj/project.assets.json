@@ -1526,11 +1526,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "/home/evan/Téléchargements/AsteroidOnlineV2/src/AsteroidOnline.Client/AsteroidOnline.Client.csproj",
+      "projectUniqueName": "/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Client/AsteroidOnline.Client.csproj",
       "projectName": "AsteroidOnline.Client",
-      "projectPath": "/home/evan/Téléchargements/AsteroidOnlineV2/src/AsteroidOnline.Client/AsteroidOnline.Client.csproj",
+      "projectPath": "/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Client/AsteroidOnline.Client.csproj",
       "packagesPath": "/home/evan/.nuget/packages/",
-      "outputPath": "/home/evan/Téléchargements/AsteroidOnlineV2/src/AsteroidOnline.Client/obj/",
+      "outputPath": "/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Client/obj/",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "/home/evan/.nuget/NuGet/NuGet.Config"
@@ -1546,11 +1546,11 @@
         "net10.0": {
           "targetAlias": "net10.0",
           "projectReferences": {
-            "/home/evan/Téléchargements/AsteroidOnlineV2/src/AsteroidOnline.Infrastructure/AsteroidOnline.Infrastructure.csproj": {
-              "projectPath": "/home/evan/Téléchargements/AsteroidOnlineV2/src/AsteroidOnline.Infrastructure/AsteroidOnline.Infrastructure.csproj"
+            "/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Infrastructure/AsteroidOnline.Infrastructure.csproj": {
+              "projectPath": "/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Infrastructure/AsteroidOnline.Infrastructure.csproj"
             },
-            "/home/evan/Téléchargements/AsteroidOnlineV2/src/AsteroidOnline.Shared/AsteroidOnline.Shared.csproj": {
-              "projectPath": "/home/evan/Téléchargements/AsteroidOnlineV2/src/AsteroidOnline.Shared/AsteroidOnline.Shared.csproj"
+            "/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Shared/AsteroidOnline.Shared.csproj": {
+              "projectPath": "/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Shared/AsteroidOnline.Shared.csproj"
             }
           }
         }

@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "Zss62u09LT0=",
+  "dgSpecHash": "Qwtn0b19mBo=",
   "success": true,
-  "projectFilePath": "/home/evan/Téléchargements/AsteroidOnlineV2/src/AsteroidOnline.Infrastructure/AsteroidOnline.Infrastructure.csproj",
+  "projectFilePath": "/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Infrastructure/AsteroidOnline.Infrastructure.csproj",
   "expectedPackageFiles": [
     "/home/evan/.nuget/packages/litenetlib/2.1.2/litenetlib.2.1.2.nupkg.sha512"
   ],
