@@ -43,4 +43,11 @@ public sealed class WaveManager
 
     /// <summary>Secondes restantes avant la prochaine vague.</summary>
     public float SecondsUntilNextWave => MathF.Max(0f, WaveInterval - _waveTimer);
+
+    /// <summary>Réinitialise l'état interne pour une nouvelle manche.</summary>
+    public void Reset()
+    {
+        _waveTimer = 0f;
+        CurrentWave = 1;
+    }
 }

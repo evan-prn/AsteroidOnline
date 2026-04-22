@@ -18,6 +18,11 @@ public class Ship : PhysicalEntity
     /// <summary>Indique si le joueur est encore en vie.</summary>
     public bool IsAlive { get; set; } = true;
 
+    /// <summary>
+    /// Score total du joueur (kills + astéroïdes détruits).
+    /// </summary>
+    public int Score { get; set; }
+
     // ──── Paramètres de mouvement (US-08) ────────────────────────────────────
 
     /// <summary>

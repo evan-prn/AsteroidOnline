@@ -1,0 +1,37 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:AsteroidOnline.Client.ViewModels"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
+             x:Class="AsteroidOnline.Client.Views.GameOverView"
+             x:DataType="vm:GameOverViewModel"
+             Background="#080812">
+
+  <Grid HorizontalAlignment="Center" VerticalAlignment="Center" Width="520">
+    <Border CornerRadius="10" Background="#101626" BorderBrush="#2A3A66" BorderThickness="1" Padding="28">
+      <StackPanel Spacing="12">
+        <TextBlock Text="FIN DE PARTIE" FontSize="38" FontWeight="Bold" Foreground="#00CFFF" HorizontalAlignment="Center" />
+        <TextBlock Text="{Binding WinnerName, StringFormat=Vainqueur : {0}}"
+                   IsVisible="{Binding ShowWinner}"
+                   FontSize="22"
+                   FontWeight="SemiBold"
+                   Foreground="#EAF4FF"
+                   HorizontalAlignment="Center" />
+        <TextBlock Text="{Binding FinalScore, StringFormat=Votre score : {0}}" FontSize="18" Foreground="#BFD7FF" HorizontalAlignment="Center" Margin="0,4,0,0" />
+
+        <Button Content="RETOUR AU LOBBY"
+                Command="{Binding ReturnToLobbyCommand}"
+                HorizontalAlignment="Stretch"
+                HorizontalContentAlignment="Center"
+                Background="#00CFFF"
+                Foreground="#0A0A1A"
+                FontWeight="Bold"
+                FontSize="16"
+                Padding="0,14"
+                CornerRadius="4"
+                Margin="0,16,0,0" />
+      </StackPanel>
+    </Border>
+  </Grid>
+</UserControl>

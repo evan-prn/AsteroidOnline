@@ -20,7 +20,7 @@
                    Foreground="#00CFFF"
                    HorizontalAlignment="Center"
                    LetterSpacing="4" />
-        <TextBlock Text="Battle Royale Multijoueur"
+        <TextBlock Text="Battle Royal Multijoueur"
                    FontSize="14"
                    Foreground="#557799"
                    HorizontalAlignment="Center"

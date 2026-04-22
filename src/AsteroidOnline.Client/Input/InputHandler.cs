@@ -53,9 +53,15 @@ public sealed class InputHandler : IDisposable
         {
             return new PlayerInputState
             {
-                ThrustForward = _pressedKeys.Contains(Key.W) || _pressedKeys.Contains(Key.Up),
-                RotateLeft    = _pressedKeys.Contains(Key.A) || _pressedKeys.Contains(Key.Left),
-                RotateRight   = _pressedKeys.Contains(Key.D) || _pressedKeys.Contains(Key.Right),
+                // Supporte WASD + ZQSD + fleches.
+                ThrustForward = _pressedKeys.Contains(Key.W)
+                             || _pressedKeys.Contains(Key.Z)
+                             || _pressedKeys.Contains(Key.Up),
+                RotateLeft    = _pressedKeys.Contains(Key.A)
+                             || _pressedKeys.Contains(Key.Q)
+                             || _pressedKeys.Contains(Key.Left),
+                RotateRight   = _pressedKeys.Contains(Key.D)
+                             || _pressedKeys.Contains(Key.Right),
                 Fire          = _pressedKeys.Contains(Key.Space) || _pressedKeys.Contains(Key.F),
                 Dash          = _pressedKeys.Contains(Key.LeftShift)
                              || _pressedKeys.Contains(Key.RightShift)

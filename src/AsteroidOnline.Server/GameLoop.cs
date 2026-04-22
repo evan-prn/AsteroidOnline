@@ -36,6 +36,7 @@ public sealed class GameLoop : INetEventListener, IDisposable
     private const int    Port                = 7777;
     private const int    MaxPlayers          = 16;
     private const int    CountdownSeconds    = 5;
+    private const int    MinPlayersToStart   = 2;
 
     // ── Infrastructure réseau ──────────────────────────────────────────────────
     private readonly NetManager _netManager;
@@ -48,8 +49,11 @@ public sealed class GameLoop : INetEventListener, IDisposable
     private readonly Dictionary<int, Asteroid>  _asteroids  = new();
     private readonly Dictionary<int, Projectile> _projectiles = new();
 
-    // File thread-safe pour les inputs reçus depuis le thread réseau
-    private readonly ConcurrentQueue<(int PlayerId, PlayerInputPacket Input)> _inputQueue = new();
+    // Dernier input connu par joueur (thread-safe, mis à jour côté réseau).
+    // Le tick serveur applique toujours la simulation au même rythme, indépendamment
+    // du nombre de paquets reçus pendant l'intervalle.
+    private readonly ConcurrentDictionary<int, PlayerInputPacket> _latestInputs = new();
+    private readonly HashSet<int> _playersReadyForLobby = new();
 
     // ── Systèmes de jeu ────────────────────────────────────────────────────────
     private readonly PhysicsSystem       _physics    = new();
@@ -69,6 +73,8 @@ public sealed class GameLoop : INetEventListener, IDisposable
     private int   _nextPlayerId = 1;
     private int   _nextProjectileId = 1;
     private readonly CancellationTokenSource _cts = new();
+    private bool _soloModeRequested;
+    private bool _currentMatchIsSolo;
 
     /// <summary>
     /// Initialise la GameLoop et démarre l'écoute réseau sur le port <see cref="Port"/>.
@@ -140,6 +146,10 @@ public sealed class GameLoop : INetEventListener, IDisposable
             case GamePhase.Playing:
                 TickPlaying(dt);
                 break;
+
+            case GamePhase.GameOver:
+                TickGameOver(dt);
+                break;
         }
     }
 
@@ -147,13 +157,10 @@ public sealed class GameLoop : INetEventListener, IDisposable
 
     private void TickLobby(float dt)
     {
-        // Démarrage du compte à rebours dès qu'au moins 1 joueur est connecté
-        if (_ships.Count >= 1)
+        // Démarrage du compte à rebours dès que le minimum de joueurs est atteint.
+        if (ShouldStartCountdown())
         {
-            _phase = GamePhase.Countdown;
-            _countdownRemaining = CountdownSeconds;
-            _countdownTimer = 0f;
-            BroadcastCountdown(_countdownRemaining);
+            EnterCountdown();
         }
     }
 
@@ -176,6 +183,12 @@ public sealed class GameLoop : INetEventListener, IDisposable
     private void StartGame()
     {
         _phase = GamePhase.Playing;
+        _latestInputs.Clear();
+        _playersReadyForLobby.Clear();
+        _currentMatchIsSolo = _ships.Count == 1;
+        _soloModeRequested = false;
+        _snapshotAccumulator = 0f;
+        _waveManager.Reset();
 
         // Spawn des joueurs à des positions sûres
         var allEntities = new List<PhysicalEntity>(_ships.Values);
@@ -198,23 +211,35 @@ public sealed class GameLoop : INetEventListener, IDisposable
 
     private void TickPlaying(float dt)
     {
-        // 1. Traitement des inputs en file
-        ProcessInputQueue();
-
-        // 2. Physique des vaisseaux (via états d'input mémorisés dans le ship)
+        // 1. Physique + inputs des vaisseaux (une seule simulation par tick).
         foreach (var ship in _ships.Values)
         {
             if (!ship.IsAlive) continue;
-            _dash.Tick(ship, false, dt);    // Gestion du cooldown dash
+
+            _latestInputs.TryGetValue(ship.Id, out var input);
+            var thrustForward = input?.ThrustForward ?? false;
+            var rotateLeft    = input?.RotateLeft ?? false;
+            var rotateRight   = input?.RotateRight ?? false;
+            var fire          = input?.Fire ?? false;
+            var dash          = input?.Dash ?? false;
+
             _weapon.UpdateCooldown(ship, dt);
-            _physics.Tick(ship, false, false, false, dt, in _bounds);
+            _dash.Tick(ship, dash, dt);
+            _physics.Tick(ship, thrustForward, rotateLeft, rotateRight, dt, in _bounds);
+
+            var proj = _weapon.TryFire(ship, fire, _nextProjectileId);
+            if (proj is not null)
+            {
+                _nextProjectileId++;
+                _projectiles[proj.Id] = proj;
+            }
         }
 
-        // 3. Physique des astéroïdes
+        // 2. Physique des astéroïdes
         foreach (var asteroid in _asteroids.Values)
             _physics.Tick(asteroid, dt, in _bounds);
 
-        // 4. Physique et durée de vie des projectiles
+        // 3. Physique et durée de vie des projectiles
         var projectilesToRemove = new List<int>();
         foreach (var proj in _projectiles.Values)
         {
@@ -230,10 +255,10 @@ public sealed class GameLoop : INetEventListener, IDisposable
         foreach (var id in projectilesToRemove)
             _projectiles.Remove(id);
 
-        // 5. Détection de collisions
+        // 4. Détection de collisions
         ProcessCollisions();
 
-        // 6. Vagues d'astéroïdes (US-16)
+        // 5. Vagues d'astéroïdes (US-16)
         if (_waveManager.Tick(dt, _asteroids.Count))
         {
             foreach (var asteroid in _asteroidSvc.SpawnWave(_asteroids.Count, WaveManager.MaxAsteroids))
@@ -241,7 +266,7 @@ public sealed class GameLoop : INetEventListener, IDisposable
             _logger.LogInformation("Vague {Wave} déclenchée", _waveManager.CurrentWave);
         }
 
-        // 7. Broadcast snapshot toutes les 3 ticks (20 Hz)
+        // 6. Broadcast snapshot toutes les 3 ticks (20 Hz)
         _snapshotAccumulator += dt;
         if (_snapshotAccumulator >= (TickDurationMs * SnapshotEveryNTicks / 1000f))
         {
@@ -249,33 +274,8 @@ public sealed class GameLoop : INetEventListener, IDisposable
             BroadcastSnapshot();
         }
 
-        // 8. Vérification fin de partie
+        // 7. Vérification fin de partie
         CheckGameOver();
-    }
-
-    // ──── Traitement des inputs ────────────────────────────────────────────────
-
-    private void ProcessInputQueue()
-    {
-        while (_inputQueue.TryDequeue(out var item))
-        {
-            var (playerId, input) = item;
-            if (!_ships.TryGetValue(playerId, out var ship) || !ship.IsAlive)
-                continue;
-
-            // Rotation et poussée via PhysicsSystem
-            var dt = (float)(TickDurationMs / 1000.0);
-            _dash.Tick(ship, input.Dash, dt);
-            _physics.Tick(ship, input.ThrustForward, input.RotateLeft, input.RotateRight, dt, in _bounds);
-
-            // Tir (US-09)
-            var proj = _weapon.TryFire(ship, input.Fire, _nextProjectileId);
-            if (proj != null)
-            {
-                _nextProjectileId++;
-                _projectiles[proj.Id] = proj;
-            }
-        }
     }
 
     // ──── Collisions ───────────────────────────────────────────────────────────
@@ -317,6 +317,7 @@ public sealed class GameLoop : INetEventListener, IDisposable
 
     private void DamageAsteroid(Asteroid asteroid, int shooterId)
     {
+        var asteroidSize = asteroid.Size;
         asteroid.HitPoints--;
         if (asteroid.HitPoints > 0) return;
 
@@ -331,8 +332,8 @@ public sealed class GameLoop : INetEventListener, IDisposable
             _asteroids[newAsteroid.Id] = newAsteroid;
         }
 
-        // Score du tireur — comptabilisé en BLOC 5
-        _ = shooterId;
+        if (shooterId > 0 && _ships.TryGetValue(shooterId, out var shooter))
+            shooter.Score += GetAsteroidScore(asteroidSize);
 
         _logger.LogDebug("Astéroïde {Id} détruit", asteroid.Id);
     }
@@ -343,6 +344,8 @@ public sealed class GameLoop : INetEventListener, IDisposable
 
         victim.IsAlive = false;
         _ships.TryGetValue(killerId, out var killer);
+        if (killer is not null && killer.Id != victim.Id)
+            killer.Score += 1000;
 
         var packet = new PlayerEliminatedPacket
         {
@@ -359,18 +362,21 @@ public sealed class GameLoop : INetEventListener, IDisposable
     private void CheckGameOver()
     {
         var alive = _ships.Values.Count(s => s.IsAlive);
-        if (alive > 1 || _ships.Count <= 1) return;
+        if (_currentMatchIsSolo)
+        {
+            // En solo, la manche se termine quand le joueur est éliminé.
+            if (alive > 0)
+                return;
+
+            EnterGameOver(winner: null, winnerNameFallback: string.Empty);
+            return;
+        }
+
+        if (alive > 1 || _ships.Count == 0)
+            return;
 
         var winner = _ships.Values.FirstOrDefault(s => s.IsAlive);
-        _phase = GamePhase.GameOver;
-
-        BroadcastReliable(new GameOverPacket
-        {
-            WinnerId   = winner?.Id ?? -1,
-            WinnerName = winner?.Pseudo ?? "Personne",
-        });
-
-        _logger.LogInformation("Fin de partie — Vainqueur : {Name}", winner?.Pseudo ?? "Personne");
+        EnterGameOver(winner, "Personne");
     }
 
     // ──── Broadcast helpers ────────────────────────────────────────────────────
@@ -396,6 +402,7 @@ public sealed class GameLoop : INetEventListener, IDisposable
                 Color                = ship.Color,
                 IsAlive              = ship.IsAlive,
                 DashCooldownProgress = DashSystem.GetCooldownProgress(ship),
+                Score                = ship.Score,
             });
         }
 
@@ -484,10 +491,18 @@ public sealed class GameLoop : INetEventListener, IDisposable
         if (entry.Value is null) return;
 
         _peers.Remove(entry.Key);
+        _latestInputs.TryRemove(entry.Key, out _);
+        _playersReadyForLobby.Remove(entry.Key);
         if (_ships.TryGetValue(entry.Key, out var ship))
         {
             ship.IsAlive = false;
             _ships.Remove(entry.Key);
+        }
+
+        if (_phase == GamePhase.GameOver && _peers.Count > 0 &&
+            _playersReadyForLobby.Count >= _peers.Count)
+        {
+            ResetMatchToLobby();
         }
 
         BroadcastLobbyState();
@@ -513,6 +528,18 @@ public sealed class GameLoop : INetEventListener, IDisposable
 
                 case PacketType.PlayerInput:
                     HandlePlayerInput(peer, br);
+                    break;
+
+                case PacketType.StartSoloRequest:
+                    HandleStartSoloRequest(peer, br);
+                    break;
+
+                case PacketType.ReturnToLobbyRequest:
+                    HandleReturnToLobbyRequest(peer, br);
+                    break;
+
+                case PacketType.LobbyStateRequest:
+                    HandleLobbyStateRequest(peer, br);
                     break;
             }
         }
@@ -553,18 +580,77 @@ public sealed class GameLoop : INetEventListener, IDisposable
 
         var packet = new PlayerInputPacket();
         packet.Deserialize(reader);
-        _inputQueue.Enqueue((entry.Key, packet));
+        _latestInputs.AddOrUpdate(
+            entry.Key,
+            packet,
+            (_, existing) => packet.Timestamp >= existing.Timestamp ? packet : existing);
+    }
+
+    private void HandleStartSoloRequest(NetPeer peer, BinaryReader reader)
+    {
+        _ = reader;
+        if (_phase != GamePhase.Lobby)
+            return;
+
+        var entry = _peers.FirstOrDefault(kv => kv.Value == peer);
+        if (entry.Value is null)
+            return;
+
+        var hostId = GetHostPlayerId();
+        if (entry.Key != hostId)
+            return;
+
+        if (_peers.Count != 1)
+            return;
+
+        _soloModeRequested = true;
+        _logger.LogInformation("Mode solo demandé par le joueur unique connecté");
+        EnterCountdown();
+    }
+
+    private void HandleReturnToLobbyRequest(NetPeer peer, BinaryReader reader)
+    {
+        _ = reader;
+        if (_phase != GamePhase.GameOver)
+            return;
+
+        var entry = _peers.FirstOrDefault(kv => kv.Value == peer);
+        if (entry.Value is null)
+            return;
+
+        _playersReadyForLobby.Add(entry.Key);
+        _logger.LogInformation(
+            "Retour lobby confirmé par joueur {Id} ({Ready}/{Total})",
+            entry.Key, _playersReadyForLobby.Count, _peers.Count);
+
+        if (_peers.Count > 0 && _playersReadyForLobby.Count >= _peers.Count)
+            ResetMatchToLobby();
+    }
+
+    private void HandleLobbyStateRequest(NetPeer peer, BinaryReader reader)
+    {
+        _ = reader;
+        var entry = _peers.FirstOrDefault(kv => kv.Value == peer);
+        if (entry.Value is null)
+            return;
+
+        // Renvoie un état lobby à jour au client demandeur.
+        // Un broadcast est acceptable ici vu la petite taille du lobby.
+        BroadcastLobbyState();
     }
 
     private void BroadcastLobbyState()
     {
         var lobbyPacket = new LobbyStatePacket();
+        var hostId = GetHostPlayerId();
+        lobbyPacket.HostPlayerId = hostId;
         foreach (var ship in _ships.Values)
             lobbyPacket.Players.Add(new LobbyPlayerInfo
             {
                 Id     = ship.Id,
                 Pseudo = ship.Pseudo,
                 Color  = ship.Color,
+                IsHost = ship.Id == hostId,
             });
         BroadcastReliable(lobbyPacket);
     }
@@ -583,5 +669,89 @@ public sealed class GameLoop : INetEventListener, IDisposable
     {
         _cts.Cancel();
         _netManager.Stop();
+    }
+
+    private static int GetAsteroidScore(AsteroidSize size) => size switch
+    {
+        AsteroidSize.Large  => 120,
+        AsteroidSize.Medium => 80,
+        AsteroidSize.Small  => 50,
+        _                   => 50,
+    };
+
+    private int GetHostPlayerId()
+        => _ships.Count == 0 ? -1 : _ships.Keys.Min();
+
+    private bool ShouldStartCountdown()
+        => _ships.Count >= MinPlayersToStart || (_soloModeRequested && _ships.Count >= 1);
+
+    private void EnterCountdown()
+    {
+        if (_phase != GamePhase.Lobby)
+            return;
+
+        _phase = GamePhase.Countdown;
+        _countdownRemaining = CountdownSeconds;
+        _countdownTimer = 0f;
+        BroadcastCountdown(_countdownRemaining);
+    }
+
+    private void EnterGameOver(Ship? winner, string winnerNameFallback)
+    {
+        _phase = GamePhase.GameOver;
+        _playersReadyForLobby.Clear();
+
+        var resolvedWinnerName = winner?.Pseudo;
+        if (string.IsNullOrWhiteSpace(resolvedWinnerName))
+            resolvedWinnerName = string.IsNullOrWhiteSpace(winnerNameFallback)
+                ? "Aucun survivant"
+                : winnerNameFallback;
+
+        var packet = new GameOverPacket
+        {
+            WinnerId = winner?.Id ?? -1,
+            WinnerName = resolvedWinnerName,
+            IsSoloMode = _currentMatchIsSolo,
+        };
+        BroadcastReliable(packet);
+
+        _logger.LogInformation("Fin de partie — Vainqueur : {Name}", packet.WinnerName);
+    }
+
+    private void TickGameOver(float dt)
+    {
+        _ = dt;
+        // Si tous les clients quittent pendant l'écran de fin, on remet l'état serveur au lobby.
+        if (_peers.Count == 0)
+            ResetMatchToLobby();
+    }
+
+    private void ResetMatchToLobby()
+    {
+        _phase = GamePhase.Lobby;
+        _countdownRemaining = CountdownSeconds;
+        _countdownTimer = 0f;
+        _snapshotAccumulator = 0f;
+        _soloModeRequested = false;
+        _currentMatchIsSolo = false;
+        _latestInputs.Clear();
+        _playersReadyForLobby.Clear();
+
+        _asteroids.Clear();
+        _projectiles.Clear();
+        _waveManager.Reset();
+
+        foreach (var ship in _ships.Values)
+        {
+            ship.IsAlive = true;
+            ship.Velocity = System.Numerics.Vector2.Zero;
+            ship.DashCooldown = 0f;
+            ship.IsDashing = false;
+            ship.DashTimeRemaining = 0f;
+            ship.WeaponCooldown = 0f;
+        }
+
+        BroadcastLobbyState();
+        _logger.LogInformation("Session réinitialisée, retour au lobby");
     }
 }

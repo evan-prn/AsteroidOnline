@@ -29,6 +29,9 @@ build_metadata.AdditionalFiles.SourceItemGroup = AvaloniaXaml
 [/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Client/Views/ConnectView.axaml]
 build_metadata.AdditionalFiles.SourceItemGroup = AvaloniaXaml
 
+[/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Client/Views/GameOverView.axaml]
+build_metadata.AdditionalFiles.SourceItemGroup = AvaloniaXaml
+
 [/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Client/Views/GameView.axaml]
 build_metadata.AdditionalFiles.SourceItemGroup = AvaloniaXaml
 

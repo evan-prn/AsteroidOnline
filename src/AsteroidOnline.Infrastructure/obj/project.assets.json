@@ -101,11 +101,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Infrastructure/AsteroidOnline.Infrastructure.csproj",
+      "projectUniqueName": "/home/evan/Téléchargements/AsteroidOnlineV2/src/AsteroidOnline.Infrastructure/AsteroidOnline.Infrastructure.csproj",
       "projectName": "AsteroidOnline.Infrastructure",
-      "projectPath": "/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Infrastructure/AsteroidOnline.Infrastructure.csproj",
+      "projectPath": "/home/evan/Téléchargements/AsteroidOnlineV2/src/AsteroidOnline.Infrastructure/AsteroidOnline.Infrastructure.csproj",
       "packagesPath": "/home/evan/.nuget/packages/",
-      "outputPath": "/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Infrastructure/obj/",
+      "outputPath": "/home/evan/Téléchargements/AsteroidOnlineV2/src/AsteroidOnline.Infrastructure/obj/",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "/home/evan/.nuget/NuGet/NuGet.Config"
@@ -121,11 +121,11 @@
         "net10.0": {
           "targetAlias": "net10.0",
           "projectReferences": {
-            "/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.GameLogic/AsteroidOnline.GameLogic.csproj": {
-              "projectPath": "/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.GameLogic/AsteroidOnline.GameLogic.csproj"
+            "/home/evan/Téléchargements/AsteroidOnlineV2/src/AsteroidOnline.GameLogic/AsteroidOnline.GameLogic.csproj": {
+              "projectPath": "/home/evan/Téléchargements/AsteroidOnlineV2/src/AsteroidOnline.GameLogic/AsteroidOnline.GameLogic.csproj"
             },
-            "/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Shared/AsteroidOnline.Shared.csproj": {
-              "projectPath": "/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Shared/AsteroidOnline.Shared.csproj"
+            "/home/evan/Téléchargements/AsteroidOnlineV2/src/AsteroidOnline.Shared/AsteroidOnline.Shared.csproj": {
+              "projectPath": "/home/evan/Téléchargements/AsteroidOnlineV2/src/AsteroidOnline.Shared/AsteroidOnline.Shared.csproj"
             }
           }
         }
@@ -167,7 +167,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "/usr/lib/dotnet/sdk/10.0.105/PortableRuntimeIdentifierGraph.json",
+        "runtimeIdentifierGraphPath": "/usr/lib/dotnet/sdk/10.0.106/PortableRuntimeIdentifierGraph.json",
         "packagesToPrune": {
           "Microsoft.CSharp": "(,4.7.32767]",
           "Microsoft.VisualBasic": "(,10.4.32767]",

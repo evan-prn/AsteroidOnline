@@ -33,6 +33,9 @@ public sealed class PlayerSnapshot
 
     /// <summary>Progression de la recharge du dash [0.0 – 1.0].</summary>
     public float DashCooldownProgress { get; set; }
+
+    /// <summary>Score courant du joueur.</summary>
+    public int Score { get; set; }
 }
 
 /// <summary>
@@ -121,6 +124,7 @@ public class GameStateSnapshotPacket : IPacket
             writer.Write((byte)p.Color);
             writer.Write(p.IsAlive);
             writer.Write(p.DashCooldownProgress);
+            writer.Write(p.Score);
         }
 
         // ── Astéroïdes ─────────────────────────────────────────────────────
@@ -168,6 +172,7 @@ public class GameStateSnapshotPacket : IPacket
                 Color                = (PlayerColor)reader.ReadByte(),
                 IsAlive              = reader.ReadBoolean(),
                 DashCooldownProgress = reader.ReadSingle(),
+                Score                = reader.ReadInt32(),
             });
         }
 

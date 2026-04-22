@@ -24,6 +24,15 @@ public enum PacketType : byte
     /// <summary>Changement de couleur de vaisseau dans le lobby.</summary>
     ColorSelect = 0x05,
 
+    /// <summary>Demande de lancement d'une partie solo depuis le lobby.</summary>
+    StartSoloRequest = 0x06,
+
+    /// <summary>Confirmation client qu'il revient au lobby après GameOver.</summary>
+    ReturnToLobbyRequest = 0x07,
+
+    /// <summary>Demande explicite de resynchronisation de l'état lobby.</summary>
+    LobbyStateRequest = 0x08,
+
     // ── Serveur → Client ──────────────────────────────────────────────────────
 
     /// <summary>Confirmation d'entrée dans le lobby, avec l'identifiant attribué.</summary>

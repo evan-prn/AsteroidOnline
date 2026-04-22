@@ -1526,11 +1526,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Client/AsteroidOnline.Client.csproj",
+      "projectUniqueName": "/home/evan/Téléchargements/AsteroidOnlineV2/src/AsteroidOnline.Client/AsteroidOnline.Client.csproj",
       "projectName": "AsteroidOnline.Client",
-      "projectPath": "/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Client/AsteroidOnline.Client.csproj",
+      "projectPath": "/home/evan/Téléchargements/AsteroidOnlineV2/src/AsteroidOnline.Client/AsteroidOnline.Client.csproj",
       "packagesPath": "/home/evan/.nuget/packages/",
-      "outputPath": "/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Client/obj/",
+      "outputPath": "/home/evan/Téléchargements/AsteroidOnlineV2/src/AsteroidOnline.Client/obj/",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "/home/evan/.nuget/NuGet/NuGet.Config"
@@ -1546,11 +1546,11 @@
         "net10.0": {
           "targetAlias": "net10.0",
           "projectReferences": {
-            "/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Infrastructure/AsteroidOnline.Infrastructure.csproj": {
-              "projectPath": "/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Infrastructure/AsteroidOnline.Infrastructure.csproj"
+            "/home/evan/Téléchargements/AsteroidOnlineV2/src/AsteroidOnline.Infrastructure/AsteroidOnline.Infrastructure.csproj": {
+              "projectPath": "/home/evan/Téléchargements/AsteroidOnlineV2/src/AsteroidOnline.Infrastructure/AsteroidOnline.Infrastructure.csproj"
             },
-            "/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Shared/AsteroidOnline.Shared.csproj": {
-              "projectPath": "/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Shared/AsteroidOnline.Shared.csproj"
+            "/home/evan/Téléchargements/AsteroidOnlineV2/src/AsteroidOnline.Shared/AsteroidOnline.Shared.csproj": {
+              "projectPath": "/home/evan/Téléchargements/AsteroidOnlineV2/src/AsteroidOnline.Shared/AsteroidOnline.Shared.csproj"
             }
           }
         }
@@ -1612,7 +1612,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "/usr/lib/dotnet/sdk/10.0.105/PortableRuntimeIdentifierGraph.json",
+        "runtimeIdentifierGraphPath": "/usr/lib/dotnet/sdk/10.0.106/PortableRuntimeIdentifierGraph.json",
         "packagesToPrune": {
           "Microsoft.CSharp": "(,4.7.32767]",
           "Microsoft.VisualBasic": "(,10.4.32767]",
@@ -1889,5 +1889,17 @@
         }
       }
     }
-  }
+  },
+  "logs": [
+    {
+      "code": "NU1903",
+      "level": "Warning",
+      "warningLevel": 1,
+      "message": "Le package 'Tmds.DBus.Protocol' 0.21.2 présente une vulnérabilité de gravité élevé(e) connue, https://github.com/advisories/GHSA-xrw6-gwf8-vvr9.",
+      "libraryId": "Tmds.DBus.Protocol",
+      "targetGraphs": [
+        "net10.0"
+      ]
+    }
+  ]
 }

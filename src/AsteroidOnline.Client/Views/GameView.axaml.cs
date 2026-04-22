@@ -1,5 +1,6 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Interactivity;
 using Avalonia.VisualTree;
 using AsteroidOnline.Client.ViewModels;
 
@@ -36,5 +37,13 @@ public partial class GameView : UserControl
 
         if (DataContext is GameViewModel vm)
             vm.Dispose();
+    }
+
+    protected override void OnLostFocus(RoutedEventArgs e)
+    {
+        base.OnLostFocus(e);
+
+        if (DataContext is GameViewModel vm)
+            vm.ClearInputs();
     }
 }

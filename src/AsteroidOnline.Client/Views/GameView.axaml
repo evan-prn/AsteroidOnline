@@ -40,14 +40,14 @@
               Margin="16" Padding="10,6" CornerRadius="6"
               Background="#CC000010" BorderBrush="#33FFFFFF" BorderThickness="1">
         <StackPanel Spacing="2" HorizontalAlignment="Right">
-          <TextBlock FontSize="13" Foreground="#AACCFF" HorizontalAlignment="Right">
+          <TextBlock FontSize="14" Foreground="#D3E7FF" HorizontalAlignment="Right">
             <TextBlock.Text>
               <MultiBinding StringFormat="Score : {0}">
                 <Binding Path="MyScore" />
               </MultiBinding>
             </TextBlock.Text>
           </TextBlock>
-          <TextBlock FontSize="11" Foreground="#7799BB" HorizontalAlignment="Right">
+          <TextBlock FontSize="12" Foreground="#A9C8E8" HorizontalAlignment="Right">
             <TextBlock.Text>
               <MultiBinding StringFormat="Rang #{0}">
                 <Binding Path="MyRank" />
@@ -63,7 +63,7 @@
               Background="#CC220010" BorderBrush="#55FF4444" BorderThickness="1"
               IsVisible="{Binding ShowEliminationFeed}">
         <TextBlock Text="{Binding EliminationFeedText}"
-                   Foreground="#FF8888" FontSize="14" FontWeight="SemiBold" />
+                   Foreground="#FFD2D2" FontSize="15" FontWeight="SemiBold" />
       </Border>
 
       <!-- ── Bas gauche : barre de recharge du dash (US-11) ─────────────── -->
@@ -77,7 +77,7 @@
                        Foreground="{Binding IsDashReady,
                            Converter={x:Static conv:BoolToColorConverter.Instance},
                            ConverterParameter='#00CFFF|#445566'}" />
-            <TextBlock Text="[SHIFT/E]" FontSize="10" Foreground="#445566" />
+            <TextBlock Text="[SHIFT/E]" FontSize="11" Foreground="#7B9BBC" />
           </StackPanel>
 
           <Border Height="6" CornerRadius="3" Background="#1E3A5F">
@@ -98,9 +98,9 @@
               Margin="16" Padding="10,8" CornerRadius="6"
               Background="#88000010" BorderBrush="#22FFFFFF" BorderThickness="1">
         <StackPanel Spacing="2">
-          <TextBlock Text="WASD / Flèches  Piloter"   FontSize="11" Foreground="#556677" />
-          <TextBlock Text="ESPACE / F        Tirer"   FontSize="11" Foreground="#556677" />
-          <TextBlock Text="SHIFT / E          Dash"   FontSize="11" Foreground="#556677" />
+          <TextBlock Text="WASD / ZQSD / Flèches  Piloter" FontSize="12" Foreground="#9FBDDD" />
+          <TextBlock Text="ESPACE / F                Tirer" FontSize="12" Foreground="#9FBDDD" />
+          <TextBlock Text="SHIFT / E                  Dash" FontSize="12" Foreground="#9FBDDD" />
         </StackPanel>
       </Border>
 

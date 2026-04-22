@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using AsteroidOnline.Client.Services;
 using AsteroidOnline.Domain.Entities;
 using AsteroidOnline.GameLogic.Interfaces;
 using AsteroidOnline.Shared.Packets;
@@ -48,6 +49,7 @@ public partial class ConnectViewModel : ViewModelBase
 {
     private readonly INetworkClientService _networkService;
     private readonly INavigationService    _navigationService;
+    private readonly PlayerSession         _playerSession;
 
     // ──── Propriétés liées ────────────────────────────────────────────────────
 
@@ -102,10 +104,12 @@ public partial class ConnectViewModel : ViewModelBase
     /// <param name="navigationService">Service de navigation entre vues.</param>
     public ConnectViewModel(
         INetworkClientService networkService,
-        INavigationService    navigationService)
+        INavigationService    navigationService,
+        PlayerSession         playerSession)
     {
         _networkService    = networkService;
         _navigationService = navigationService;
+        _playerSession     = playerSession;
 
         // Sélection de la couleur Bleu par défaut.
         _selectedColorOption = AvailableColors[1];
@@ -127,6 +131,7 @@ public partial class ConnectViewModel : ViewModelBase
     {
         ConnectionStatus = ConnectionStatus.Connecting;
         StatusMessage    = "Connexion en cours...";
+        _playerSession.PlayerId = 0;
 
         // Abonnement aux paquets avant la connexion pour ne rien manquer.
         _networkService.PacketReceived += OnPacketReceived;
@@ -144,6 +149,8 @@ public partial class ConnectViewModel : ViewModelBase
             }
 
             // Envoi de la demande d'identification avec pseudo + couleur.
+            _playerSession.Pseudo = Pseudo.Trim();
+            _playerSession.Color  = SelectedColorOption.Color;
             _networkService.SendReliable(new ConnectRequestPacket
             {
                 Pseudo = Pseudo.Trim(),
@@ -177,6 +184,7 @@ public partial class ConnectViewModel : ViewModelBase
         {
             ConnectionStatus = ConnectionStatus.Connected;
             StatusMessage    = $"Connecté — ID joueur : {packet.PlayerId}";
+            _playerSession.PlayerId = packet.PlayerId;
 
             // Navigation vers le lobby (US-02) : se désabonner puis naviguer.
             _networkService.PacketReceived -= OnPacketReceived;

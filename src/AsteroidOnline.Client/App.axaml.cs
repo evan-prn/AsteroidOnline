@@ -26,6 +26,7 @@ public partial class App : Application
     private LiteNetClientService?  _networkService;
     private NavigationService?     _navigationService;
     private MainWindowViewModel?   _mainWindowViewModel;
+    private PlayerSession?         _playerSession;
 
     // Timer global de polling réseau — actif en permanence pour que les paquets
     // soient traités quelle que soit la vue courante (ConnectView, LobbyView…).
@@ -50,6 +51,7 @@ public partial class App : Application
             // ── Construction manuelle du conteneur DI ────────────────────────
             _networkService      = new LiteNetClientService();
             _mainWindowViewModel = new MainWindowViewModel();
+            _playerSession       = new PlayerSession();
 
             // Le NavigationService a besoin d'un accès au MainWindowViewModel
             // pour modifier CurrentViewModel ; on le branche via un callback.
@@ -98,13 +100,16 @@ public partial class App : Application
     private object CreateViewModel(Type type)
     {
         if (type == typeof(ConnectViewModel))
-            return new ConnectViewModel(_networkService!, _navigationService!);
+            return new ConnectViewModel(_networkService!, _navigationService!, _playerSession!);
 
         if (type == typeof(LobbyViewModel))
-            return new LobbyViewModel(_networkService!, _navigationService!);
+            return new LobbyViewModel(_networkService!, _navigationService!, _playerSession!);
 
         if (type == typeof(GameViewModel))
-            return new GameViewModel(_networkService!, _navigationService!);
+            return new GameViewModel(_networkService!, _navigationService!, _playerSession!);
+
+        if (type == typeof(GameOverViewModel))
+            return new GameOverViewModel(_navigationService!, _networkService!, "Personne", 0, isSoloMode: false);
 
         throw new InvalidOperationException(
             $"[App] ViewModel non enregistré dans la factory : {type.FullName}");

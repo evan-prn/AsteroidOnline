@@ -17,6 +17,11 @@ public sealed class LobbyPlayerInfo
     public PlayerColor Color { get; set; }
 
     /// <summary>
+    /// Vrai si ce joueur est l'hôte de la session (référence du lobby).
+    /// </summary>
+    public bool IsHost { get; set; }
+
+    /// <summary>
     /// Retourne la couleur hexadécimale correspondant à <see cref="Color"/>.
     /// Utilisé côté client pour l'affichage visuel sans dépendance Avalonia dans Shared.
     /// </summary>
@@ -44,21 +49,29 @@ public class LobbyStatePacket : IPacket
     /// <summary>Liste de tous les joueurs actuellement dans le lobby.</summary>
     public List<LobbyPlayerInfo> Players { get; set; } = new();
 
+    /// <summary>
+    /// Identifiant du joueur hôte (ou -1 si aucun joueur).
+    /// </summary>
+    public int HostPlayerId { get; set; } = -1;
+
     /// <inheritdoc/>
     public void Serialize(BinaryWriter writer)
     {
+        writer.Write(HostPlayerId);
         writer.Write(Players.Count);
         foreach (var p in Players)
         {
             writer.Write(p.Id);
             writer.Write(p.Pseudo);
             writer.Write((byte)p.Color);
+            writer.Write(p.IsHost);
         }
     }
 
     /// <inheritdoc/>
     public void Deserialize(BinaryReader reader)
     {
+        HostPlayerId = reader.ReadInt32();
         var count = reader.ReadInt32();
         Players.Clear();
         for (var i = 0; i < count; i++)
@@ -68,6 +81,7 @@ public class LobbyStatePacket : IPacket
                 Id     = reader.ReadInt32(),
                 Pseudo = reader.ReadString(),
                 Color  = (PlayerColor)reader.ReadByte(),
+                IsHost = reader.ReadBoolean(),
             });
         }
     }

@@ -1,11 +1,14 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using Avalonia.Controls;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using AsteroidOnline.Client.Input;
 using AsteroidOnline.Client.Rendering;
+using AsteroidOnline.Client.Services;
 using AsteroidOnline.Domain.Systems;
 using AsteroidOnline.GameLogic.Interfaces;
 using AsteroidOnline.Shared.Packets;
@@ -13,59 +16,53 @@ using AsteroidOnline.Shared.Packets;
 namespace AsteroidOnline.Client.ViewModels;
 
 /// <summary>
-/// ViewModel de l'écran de jeu principal.
-/// Gère la boucle cliente à 60 Hz, l'envoi des inputs UDP,
-/// la réception des snapshots serveur, le rendu canvas et le HUD (US-29).
+/// ViewModel de l'ecran de jeu principal.
+/// Gere la boucle cliente a 60 Hz, l'envoi des inputs UDP,
+/// la reception des snapshots serveur, le rendu canvas et le HUD.
 /// </summary>
 public partial class GameViewModel : ViewModelBase, IDisposable
 {
     private readonly INetworkClientService _networkService;
-    private readonly INavigationService    _navigationService;
+    private readonly INavigationService _navigationService;
+    private readonly PlayerSession _playerSession;
 
     private readonly DispatcherTimer _gameTimer;
-    private readonly Stopwatch       _stopwatch = Stopwatch.StartNew();
+    private readonly Stopwatch _stopwatch = Stopwatch.StartNew();
     private long _lastTickTimestamp;
 
-    private InputHandler?  _inputHandler;
-    private GameRenderer?  _renderer;
+    private InputHandler? _inputHandler;
+    private GameRenderer? _renderer;
 
-    // Dernier snapshot reçu du serveur (null tant que la partie n'a pas commencé)
-    private GameStateSnapshotPacket? _lastSnapshot;
+    private GameStateSnapshotPacket? _previousSnapshot;
+    private GameStateSnapshotPacket? _currentSnapshot;
+    private double _currentSnapshotReceivedAtSec;
 
-    // Identifiant du joueur local (reçu lors du LobbyJoined — passé depuis App)
-    public int LocalPlayerId { get; set; }
+    private const double SnapshotIntervalSec = 0.05; // 20 Hz
 
-    // Prédiction locale du dash (US-11)
+    // Prediction locale du dash
     private float _dashCooldownRemaining;
-    private bool  _dashWasPressedLastFrame;
+    private bool _dashWasPressedLastFrame;
 
-    // ──── Propriétés HUD (US-29) ───────────────────────────────────────────────
+    /// <summary>Identifiant du joueur local en session.</summary>
+    public int LocalPlayerId => _playerSession.PlayerId;
 
-    /// <summary>Nombre de joueurs encore en vie.</summary>
-    [ObservableProperty] private int    _alivePlayersCount;
-
-    /// <summary>Score du joueur local.</summary>
-    [ObservableProperty] private int    _myScore;
-
-    /// <summary>Rang actuel parmi les survivants.</summary>
-    [ObservableProperty] private int    _myRank = 1;
-
-    /// <summary>Progression recharge dash [0.0 – 1.0] (US-11).</summary>
+    [ObservableProperty] private int _alivePlayersCount;
+    [ObservableProperty] private int _myScore;
+    [ObservableProperty] private int _myRank = 1;
     [ObservableProperty] private double _dashCooldownProgress = 1.0;
+    [ObservableProperty] private bool _isDashReady = true;
 
-    /// <summary>Dash immédiatement disponible.</summary>
-    [ObservableProperty] private bool   _isDashReady = true;
-
-    // Feed d'éliminations HUD (US-24)
     [ObservableProperty] private string _eliminationFeedText = string.Empty;
-    [ObservableProperty] private bool   _showEliminationFeed;
+    [ObservableProperty] private bool _showEliminationFeed;
 
-    // ──── Constructeur ────────────────────────────────────────────────────────
-
-    public GameViewModel(INetworkClientService networkService, INavigationService navigationService)
+    public GameViewModel(
+        INetworkClientService networkService,
+        INavigationService navigationService,
+        PlayerSession playerSession)
     {
-        _networkService    = networkService;
+        _networkService = networkService;
         _navigationService = navigationService;
+        _playerSession = playerSession;
 
         _networkService.PacketReceived += OnPacketReceived;
 
@@ -78,55 +75,55 @@ public partial class GameViewModel : ViewModelBase, IDisposable
         _gameTimer.Start();
     }
 
-    // ──── Attachement par GameView ────────────────────────────────────────────
-
     /// <summary>
     /// Branche l'InputHandler sur la source clavier et le renderer sur le canvas.
-    /// Appelé depuis <see cref="Views.GameView.OnAttachedToVisualTree"/>.
     /// </summary>
     public void Attach(Avalonia.Input.IInputElement inputSource, Canvas gameCanvas)
     {
         _inputHandler?.Dispose();
         _inputHandler = new InputHandler(inputSource);
-        _renderer     = new GameRenderer(gameCanvas);
+        _renderer = new GameRenderer(gameCanvas);
     }
 
-    // ──── Boucle de jeu ───────────────────────────────────────────────────────
+    /// <summary>
+    /// Nettoie les touches maintenues (ex: perte de focus).
+    /// </summary>
+    public void ClearInputs()
+    {
+        _inputHandler?.ClearAll();
+    }
 
     private void OnGameTick(object? sender, EventArgs e)
     {
-        var now       = _stopwatch.ElapsedMilliseconds;
+        var now = _stopwatch.ElapsedMilliseconds;
         var deltaTime = (now - _lastTickTimestamp) / 1000f;
         _lastTickTimestamp = now;
 
-        // 1. Poll réseau
         _networkService.PollEvents();
 
         if (_inputHandler is null) return;
 
-        // 2. Lecture inputs
         var inputState = _inputHandler.GetCurrentState();
 
-        // 3. Envoi UDP
         _networkService.SendUnreliable(new PlayerInputPacket
         {
             ThrustForward = inputState.ThrustForward,
-            RotateLeft    = inputState.RotateLeft,
-            RotateRight   = inputState.RotateRight,
-            Fire          = inputState.Fire,
-            Dash          = inputState.Dash,
-            Timestamp     = now,
+            RotateLeft = inputState.RotateLeft,
+            RotateRight = inputState.RotateRight,
+            Fire = inputState.Fire,
+            Dash = inputState.Dash,
+            Timestamp = now,
         });
 
-        // 4. Prédiction dash HUD
         UpdateDashPrediction(inputState, deltaTime);
 
-        // 5. Rendu canvas
-        if (_renderer is not null && _lastSnapshot is not null)
-            _renderer.Render(_lastSnapshot, LocalPlayerId);
+        if (_renderer is not null)
+        {
+            var renderSnapshot = BuildRenderSnapshot();
+            if (renderSnapshot is not null)
+                _renderer.Render(renderSnapshot, LocalPlayerId);
+        }
     }
-
-    // ──── Prédiction locale dash ──────────────────────────────────────────────
 
     private void UpdateDashPrediction(PlayerInputState inputState, float deltaTime)
     {
@@ -145,8 +142,6 @@ public partial class GameViewModel : ViewModelBase, IDisposable
 
         IsDashReady = _dashCooldownRemaining <= 0f;
     }
-
-    // ──── Réception des paquets ───────────────────────────────────────────────
 
     private void OnPacketReceived(PacketType type, BinaryReader reader)
     {
@@ -171,19 +166,23 @@ public partial class GameViewModel : ViewModelBase, IDisposable
         var packet = new GameStateSnapshotPacket();
         packet.Deserialize(reader);
 
-        // Mise à jour depuis le thread réseau → post sur UI thread pour les propriétés
         Dispatcher.UIThread.Post(() =>
         {
-            _lastSnapshot      = packet;
-            AlivePlayersCount  = packet.AlivePlayersCount;
+            _previousSnapshot = _currentSnapshot;
+            _currentSnapshot = packet;
+            _currentSnapshotReceivedAtSec = _stopwatch.Elapsed.TotalSeconds;
 
-            // Synchronisation du cooldown dash depuis le snapshot serveur
+            AlivePlayersCount = packet.AlivePlayersCount;
+
             var mySnap = packet.Players.Find(p => p.Id == LocalPlayerId);
             if (mySnap is not null)
             {
                 _dashCooldownRemaining = (1f - mySnap.DashCooldownProgress)
-                                        * DashSystem.CooldownDuration;
+                    * DashSystem.CooldownDuration;
+                MyScore = mySnap.Score;
             }
+
+            MyRank = ComputeRank(packet, LocalPlayerId);
         });
     }
 
@@ -194,10 +193,9 @@ public partial class GameViewModel : ViewModelBase, IDisposable
 
         Dispatcher.UIThread.Post(() =>
         {
-            EliminationFeedText = $"{packet.KillerName} a éliminé {packet.VictimName}";
+            EliminationFeedText = $"{packet.KillerName} a elimine {packet.VictimName}";
             ShowEliminationFeed = true;
 
-            // Masquage automatique après 4 secondes (US-24)
             var timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(4) };
             timer.Tick += (s, _) =>
             {
@@ -215,14 +213,121 @@ public partial class GameViewModel : ViewModelBase, IDisposable
 
         Dispatcher.UIThread.Post(() =>
         {
+            var winnerName = packet.WinnerName;
+            if (!packet.IsSoloMode && string.IsNullOrWhiteSpace(winnerName))
+                winnerName = packet.WinnerId == LocalPlayerId && LocalPlayerId > 0
+                    ? _playerSession.Pseudo
+                    : "Aucun survivant";
+
             _networkService.PacketReceived -= OnPacketReceived;
-            // Navigation vers l'écran de fin (US-25) — GameOverViewModel créé en BLOC 5
-            // Pour l'instant on revient au lobby
-            _navigationService.NavigateTo<LobbyViewModel>();
+            _navigationService.NavigateTo(new GameOverViewModel(
+                _navigationService,
+                _networkService,
+                winnerName,
+                MyScore,
+                packet.IsSoloMode));
         });
     }
 
-    // ──── IDisposable ─────────────────────────────────────────────────────────
+    private GameStateSnapshotPacket? BuildRenderSnapshot()
+    {
+        if (_currentSnapshot is null)
+            return null;
+
+        if (_previousSnapshot is null)
+            return _currentSnapshot;
+
+        var elapsedFromCurrent = _stopwatch.Elapsed.TotalSeconds - _currentSnapshotReceivedAtSec;
+        var alpha = Math.Clamp(elapsedFromCurrent / SnapshotIntervalSec, 0.0, 1.0);
+
+        return InterpolateSnapshots(_previousSnapshot, _currentSnapshot, (float)alpha);
+    }
+
+    private static GameStateSnapshotPacket InterpolateSnapshots(
+        GameStateSnapshotPacket previous,
+        GameStateSnapshotPacket current,
+        float alpha)
+    {
+        var result = new GameStateSnapshotPacket
+        {
+            ServerTimestamp = current.ServerTimestamp,
+            AlivePlayersCount = current.AlivePlayersCount,
+        };
+
+        var previousPlayersById = previous.Players.ToDictionary(p => p.Id);
+        foreach (var p in current.Players)
+        {
+            previousPlayersById.TryGetValue(p.Id, out var p0);
+            result.Players.Add(new PlayerSnapshot
+            {
+                Id = p.Id,
+                X = Lerp(p0?.X ?? p.X, p.X, alpha),
+                Y = Lerp(p0?.Y ?? p.Y, p.Y, alpha),
+                Rotation = LerpAngle(p0?.Rotation ?? p.Rotation, p.Rotation, alpha),
+                VelocityX = Lerp(p0?.VelocityX ?? p.VelocityX, p.VelocityX, alpha),
+                VelocityY = Lerp(p0?.VelocityY ?? p.VelocityY, p.VelocityY, alpha),
+                Color = p.Color,
+                IsAlive = p.IsAlive,
+                DashCooldownProgress = Lerp(p0?.DashCooldownProgress ?? p.DashCooldownProgress, p.DashCooldownProgress, alpha),
+                Score = p.Score,
+            });
+        }
+
+        var previousAsteroidsById = previous.Asteroids.ToDictionary(a => a.Id);
+        foreach (var a in current.Asteroids)
+        {
+            previousAsteroidsById.TryGetValue(a.Id, out var a0);
+            result.Asteroids.Add(new AsteroidSnapshot
+            {
+                Id = a.Id,
+                X = Lerp(a0?.X ?? a.X, a.X, alpha),
+                Y = Lerp(a0?.Y ?? a.Y, a.Y, alpha),
+                Rotation = LerpAngle(a0?.Rotation ?? a.Rotation, a.Rotation, alpha),
+                Size = a.Size,
+                HitPoints = a.HitPoints,
+            });
+        }
+
+        var previousProjectilesById = previous.Projectiles.ToDictionary(pr => pr.Id);
+        foreach (var pr in current.Projectiles)
+        {
+            previousProjectilesById.TryGetValue(pr.Id, out var pr0);
+            result.Projectiles.Add(new ProjectileSnapshot
+            {
+                Id = pr.Id,
+                X = Lerp(pr0?.X ?? pr.X, pr.X, alpha),
+                Y = Lerp(pr0?.Y ?? pr.Y, pr.Y, alpha),
+                OwnerId = pr.OwnerId,
+            });
+        }
+
+        return result;
+    }
+
+    private static int ComputeRank(GameStateSnapshotPacket packet, int localPlayerId)
+    {
+        if (localPlayerId <= 0)
+            return 1;
+
+        var ordered = packet.Players
+            .OrderByDescending(p => p.Score)
+            .ThenByDescending(p => p.IsAlive)
+            .ThenBy(p => p.Id)
+            .ToList();
+
+        var idx = ordered.FindIndex(p => p.Id == localPlayerId);
+        return idx < 0 ? 1 : idx + 1;
+    }
+
+    private static float Lerp(float a, float b, float t) => a + ((b - a) * t);
+
+    private static float LerpAngle(float a, float b, float t)
+    {
+        var delta = b - a;
+        while (delta > MathF.PI) delta -= MathF.PI * 2f;
+        while (delta < -MathF.PI) delta += MathF.PI * 2f;
+        return a + (delta * t);
+    }
 
     public void Dispose()
     {

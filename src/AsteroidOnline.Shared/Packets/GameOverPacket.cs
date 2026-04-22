@@ -15,11 +15,15 @@ public class GameOverPacket : IPacket
     /// <summary>Identifiant du vainqueur.</summary>
     public int WinnerId { get; set; }
 
+    /// <summary>Vrai si la manche terminée était en mode solo.</summary>
+    public bool IsSoloMode { get; set; }
+
     /// <inheritdoc/>
     public void Serialize(BinaryWriter writer)
     {
         writer.Write(WinnerId);
         writer.Write(WinnerName);
+        writer.Write(IsSoloMode);
     }
 
     /// <inheritdoc/>
@@ -27,5 +31,6 @@ public class GameOverPacket : IPacket
     {
         WinnerId   = reader.ReadInt32();
         WinnerName = reader.ReadString();
+        IsSoloMode = reader.ReadBoolean();
     }
 }

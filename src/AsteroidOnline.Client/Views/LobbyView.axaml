@@ -23,6 +23,13 @@
           </MultiBinding>
         </TextBlock.Text>
       </TextBlock>
+      <TextBlock FontSize="13" Foreground="#9FC3E8" Margin="0,6,0,0">
+        <TextBlock.Text>
+          <MultiBinding StringFormat="Hôte : {0}">
+            <Binding Path="HostName" />
+          </MultiBinding>
+        </TextBlock.Text>
+      </TextBlock>
     </StackPanel>
 
     <!-- ══ Liste des joueurs (US-04) ════════════════════════════════════════ -->
@@ -42,11 +49,19 @@
                   </Canvas>
 
                   <!-- Pseudo du joueur -->
-                  <TextBlock Grid.Column="2"
-                             Text="{Binding Pseudo}"
-                             Foreground="White"
-                             FontSize="16"
-                             VerticalAlignment="Center" />
+                  <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding Pseudo}"
+                               Foreground="White"
+                               FontSize="16"
+                               VerticalAlignment="Center" />
+                    <Border IsVisible="{Binding IsHost}"
+                            Background="#2E496F"
+                            CornerRadius="4"
+                            Padding="6,2"
+                            VerticalAlignment="Center">
+                      <TextBlock Text="HÔTE" Foreground="#EAF4FF" FontSize="11" FontWeight="Bold" />
+                    </Border>
+                  </StackPanel>
                 </Grid>
               </Border>
             </DataTemplate>
@@ -91,6 +106,17 @@
                   Background="{Binding CountdownSeconds, Converter={x:Static conv:CountdownSegmentConverter.Instance},
                                ConverterParameter='4'}" />
         </StackPanel>
+
+        <Button Content="LANCER EN SOLO"
+                Command="{Binding StartSoloCommand}"
+                IsVisible="{Binding CanStartSolo}"
+                HorizontalAlignment="Center"
+                Margin="0,12,0,0"
+                Background="#00CFFF"
+                Foreground="#0A0A1A"
+                FontWeight="Bold"
+                Padding="18,8"
+                CornerRadius="4" />
 
       </StackPanel>
     </Border>
