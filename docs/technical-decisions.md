@@ -53,14 +53,18 @@ court au lieu d'un `Lerp` linéaire brut.
 ## 5. Audio léger via service dédié
 
 ### Décision
-Le service audio client reste injecté proprement, mais il joue désormais deux WAV
-synthétiques distincts via WinMM en mode asynchrone, avec anti-spam.
+Le service audio client reste injecté proprement, mais la lecture Windows est
+désormais basée sur `NAudio` (`WaveOutEvent` + `AudioFileReader`), avec :
+- ambiance en boucle via un flux dédié ;
+- tirs/explosions en one-shot superposables.
 
 ### Pourquoi
-- Les anciens bips système donnaient un rendu pauvre et pouvaient bloquer le thread.
-- Cette solution reste légère, sans moteur audio externe.
-- Le déclenchement du son de tir est local au press input pour réduire la latence
-  perçue.
+- Les solutions précédentes WinMM/MCI étaient fragiles (échecs silencieux,
+  concurrence limitée selon les pilotes/codecs, comportements variables).
+- `NAudio` fournit un chemin de lecture Windows plus stable pour mixer ambiance
+  + SFX simultanément.
+- Le déclenchement du son de tir reste local au press input pour réduire la latence
+  perçue sans bloquer le rendu.
 
 ## 6. Suppression du quadrillage en renderer
 

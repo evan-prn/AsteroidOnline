@@ -29,6 +29,8 @@
 - [ ] Son d'explosion déclenché à la destruction d'astéroïde.
 - [ ] Pas de saturation sonore lors d'un spam d'actions.
 - [ ] Pas de crash si l'audio système est indisponible.
+- [ ] L'ambiance reste active pendant les tirs/explosions (pas de coupure).
+- [ ] Plusieurs tirs rapides s'entendent en superposition.
 
 ## F. Réseau et rendu
 - [ ] Aucune `TooBigPacketException` après plusieurs minutes avec tirs, fragments et 20 joueurs simulés.

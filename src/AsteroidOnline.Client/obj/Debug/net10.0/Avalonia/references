@@ -36,6 +36,12 @@ C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.5\ref\net10.0\Micro
 C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.5\ref\net10.0\Microsoft.Win32.Primitives.dll
 C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.5\ref\net10.0\Microsoft.Win32.Registry.dll
 C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.5\ref\net10.0\mscorlib.dll
+C:\Users\oui\.nuget\packages\naudio.asio\2.2.1\lib\netstandard2.0\NAudio.Asio.dll
+C:\Users\oui\.nuget\packages\naudio.core\2.2.1\lib\netstandard2.0\NAudio.Core.dll
+C:\Users\oui\.nuget\packages\naudio\2.2.1\lib\net6.0\NAudio.dll
+C:\Users\oui\.nuget\packages\naudio.midi\2.2.1\lib\netstandard2.0\NAudio.Midi.dll
+C:\Users\oui\.nuget\packages\naudio.wasapi\2.2.1\lib\netstandard2.0\NAudio.Wasapi.dll
+C:\Users\oui\.nuget\packages\naudio.winmm\2.2.1\lib\netstandard2.0\NAudio.WinMM.dll
 C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.5\ref\net10.0\netstandard.dll
 C:\Users\oui\.nuget\packages\skiasharp\2.88.9\lib\net6.0\SkiaSharp.dll
 C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.5\ref\net10.0\System.AppContext.dll

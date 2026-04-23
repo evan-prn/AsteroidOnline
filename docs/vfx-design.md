@@ -16,7 +16,9 @@
 - Déclenché immédiatement sur l'input local de tir.
 - Cadence limitée pour éviter le spam sonore.
 - Timbre synthétique court et brillant, distinct d'un bip système.
-- Priorité de chargement custom: `shot2.mp3`, puis `shot.mp3`, puis `shot.wav`.
+- Priorité de chargement custom: `shot2.wav`, `shot.wav`, puis `shot2.mp3`, puis `shot.mp3`.
+- Recommandation technique: utiliser `wav` pour les SFX très fréquents afin d'éviter
+  les coûts d'ouverture MP3 à chaque tir.
 
 ### Explosions d'astéroïdes
 - Déclenché quand un astéroïde disparaît entre deux snapshots.
@@ -25,7 +27,8 @@
 
 ### Musique d'ambiance
 - Lecture en boucle pendant la partie.
-- Priorité de chargement custom: `ambient.mp3`, `ambience.mp3`, `music.mp3`, puis `ambient.wav`.
+- Priorité de chargement custom: `ambient.wav`, `ambient.mp3`, `ambience.mp3`,
+  `music.mp3`, `ambience.wav`, puis `music.wav`.
 - Le fichier doit être placé dans `src/AsteroidOnline.Client/Assets/Audio`.
 
 ## Implémentation

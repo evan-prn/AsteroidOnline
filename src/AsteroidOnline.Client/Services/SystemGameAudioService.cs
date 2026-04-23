@@ -1,29 +1,27 @@
 namespace AsteroidOnline.Client.Services;
 
 using System;
+using System.Collections.Generic;
 using System.IO;
-using System.Runtime.InteropServices;
-using System.Threading.Tasks;
+using NAudio.Wave;
 
 /// <summary>
-/// Audio Windows non bloquant.
-/// Les SFX WAV passent par PlaySound, les MP3 passent par MCI hors thread UI.
-/// La musique d'ambiance tourne sur un alias dedie en boucle.
+/// Service audio Windows base sur NAudio.
+/// Permet de garder l'ambiance en boucle et de superposer des one-shots (tir/explosion).
 /// </summary>
-public sealed class SystemGameAudioService : IGameAudioService
+public sealed class SystemGameAudioService : IGameAudioService, IDisposable
 {
-    private const int SndAsync = 0x0001;
-    private const int SndNodefault = 0x0002;
-    private const int SndFilename = 0x00020000;
-    private const string AmbientAlias = "ambient_loop";
-
     private readonly string? _shotPath;
     private readonly string? _explosionPath;
     private readonly string? _ambientPath;
+    private readonly object _sync = new();
+    private readonly List<IWavePlayer> _activeOneShots = new();
+
+    private IWavePlayer? _ambientOutput;
+    private AudioFileReader? _ambientReader;
+    private LoopStream? _ambientLoop;
     private long _lastShotAtMs;
     private long _lastExplosionAtMs;
-    private int _shotAliasCounter;
-    private int _explosionAliasCounter;
     private bool _ambientStarted;
 
     public SystemGameAudioService()
@@ -32,56 +30,120 @@ public sealed class SystemGameAudioService : IGameAudioService
             return;
 
         var outputRoot = AppContext.BaseDirectory;
-        _shotPath = ResolveAssetPath(outputRoot, "shot2.mp3", "shot.mp3", "shot.wav");
+        _shotPath = ResolveAssetPath(outputRoot, "shot2.wav", "shot.wav", "shot2.mp3", "shot.mp3");
         _explosionPath = ResolveAssetPath(
             outputRoot,
+            "asteroid-explosion.wav",
             "asteroid-explosion.mp3",
-            "asteroid-explosion.wav");
+            "asteroid-shot.wav");
         _ambientPath = ResolveAssetPath(
             outputRoot,
+            "ambient.wav",
             "ambient.mp3",
             "ambience.mp3",
             "music.mp3",
-            "ambient.wav");
+            "ambience.wav",
+            "music.wav");
     }
 
     public void PlayShot()
     {
-        if (!CanPlay(ref _lastShotAtMs, 55) || string.IsNullOrWhiteSpace(_shotPath))
+        if (!CanPlay(ref _lastShotAtMs, 35) || string.IsNullOrWhiteSpace(_shotPath))
             return;
 
-        PlayOneShot(_shotPath, "shot", ref _shotAliasCounter);
+        PlayOneShot(_shotPath, 0.90f);
     }
 
     public void PlayAsteroidExplosion()
     {
-        if (!CanPlay(ref _lastExplosionAtMs, 120) || string.IsNullOrWhiteSpace(_explosionPath))
+        if (!CanPlay(ref _lastExplosionAtMs, 90) || string.IsNullOrWhiteSpace(_explosionPath))
             return;
 
-        PlayOneShot(_explosionPath, "explosion", ref _explosionAliasCounter);
+        PlayOneShot(_explosionPath, 0.95f);
     }
 
     public void StartAmbientLoop()
     {
-        if (!OperatingSystem.IsWindows() || string.IsNullOrWhiteSpace(_ambientPath) || _ambientStarted)
+        if (!OperatingSystem.IsWindows() || string.IsNullOrWhiteSpace(_ambientPath))
             return;
 
-        _ambientStarted = true;
-        _ = Task.Run(() =>
+        lock (_sync)
         {
-            _ = MciSendString($"close {AmbientAlias}", null, 0, IntPtr.Zero);
-            _ = MciSendString($"open \"{_ambientPath}\" alias {AmbientAlias}", null, 0, IntPtr.Zero);
-            _ = MciSendString($"play {AmbientAlias} repeat", null, 0, IntPtr.Zero);
-        });
+            if (_ambientStarted)
+                return;
+
+            try
+            {
+                _ambientReader = new AudioFileReader(_ambientPath) { Volume = 0.42f };
+                _ambientLoop = new LoopStream(_ambientReader);
+                _ambientOutput = new WaveOutEvent
+                {
+                    DesiredLatency = 80,
+                    NumberOfBuffers = 2,
+                };
+                _ambientOutput.Init(_ambientLoop);
+                _ambientOutput.Play();
+                _ambientStarted = true;
+            }
+            catch
+            {
+                DisposeAmbient_NoLock();
+                _ambientStarted = false;
+            }
+        }
     }
 
     public void StopAmbientLoop()
     {
-        if (!OperatingSystem.IsWindows() || !_ambientStarted)
+        lock (_sync)
+        {
+            _ambientStarted = false;
+            DisposeAmbient_NoLock();
+        }
+    }
+
+    private void PlayOneShot(string path, float volume)
+    {
+        if (!File.Exists(path))
             return;
 
-        _ambientStarted = false;
-        _ = Task.Run(() => _ = MciSendString($"close {AmbientAlias}", null, 0, IntPtr.Zero));
+        AudioFileReader? reader = null;
+        WaveOutEvent? output = null;
+        try
+        {
+            reader = new AudioFileReader(path) { Volume = volume };
+            output = new WaveOutEvent
+            {
+                DesiredLatency = 60,
+                NumberOfBuffers = 2,
+            };
+            output.Init(reader);
+
+            var capturedOutput = output;
+            var capturedReader = reader;
+            output.PlaybackStopped += (_, _) =>
+            {
+                lock (_sync)
+                {
+                    _activeOneShots.Remove(capturedOutput);
+                }
+
+                capturedOutput.Dispose();
+                capturedReader.Dispose();
+            };
+
+            lock (_sync)
+            {
+                _activeOneShots.Add(output);
+            }
+
+            output.Play();
+        }
+        catch
+        {
+            output?.Dispose();
+            reader?.Dispose();
+        }
     }
 
     private static bool CanPlay(ref long lastPlayedAtMs, int minIntervalMs)
@@ -117,35 +179,73 @@ public sealed class SystemGameAudioService : IGameAudioService
         return null;
     }
 
-    private static void PlayOneShot(string path, string aliasPrefix, ref int aliasCounter)
+    private void DisposeAmbient_NoLock()
     {
-        var extension = Path.GetExtension(path);
-        if (extension.Equals(".wav", StringComparison.OrdinalIgnoreCase))
-        {
-            PlaySound(path, IntPtr.Zero, SndAsync | SndNodefault | SndFilename);
-            return;
-        }
+        _ambientOutput?.Stop();
+        _ambientOutput?.Dispose();
+        _ambientOutput = null;
 
-        if (!extension.Equals(".mp3", StringComparison.OrdinalIgnoreCase))
-            return;
+        _ambientLoop?.Dispose();
+        _ambientLoop = null;
 
-        aliasCounter++;
-        var alias = $"{aliasPrefix}{aliasCounter}";
-        var safePath = path.Replace("\"", "\"\"");
-        _ = Task.Run(async () =>
-        {
-            _ = MciSendString($"close {alias}", null, 0, IntPtr.Zero);
-            _ = MciSendString($"open \"{safePath}\" type mpegvideo alias {alias}", null, 0, IntPtr.Zero);
-            _ = MciSendString($"play {alias} from 0", null, 0, IntPtr.Zero);
-            await Task.Delay(1500).ConfigureAwait(false);
-            _ = MciSendString($"close {alias}", null, 0, IntPtr.Zero);
-        });
+        _ambientReader?.Dispose();
+        _ambientReader = null;
     }
 
-    [DllImport("winmm.dll", EntryPoint = "PlaySoundW", CharSet = CharSet.Unicode, SetLastError = true)]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    private static extern bool PlaySound(string pszSound, IntPtr hmod, int fdwSound);
+    public void Dispose()
+    {
+        lock (_sync)
+        {
+            _ambientStarted = false;
+            DisposeAmbient_NoLock();
 
-    [DllImport("winmm.dll", EntryPoint = "mciSendStringW", CharSet = CharSet.Unicode, SetLastError = true)]
-    private static extern int MciSendString(string command, System.Text.StringBuilder? buffer, int bufferSize, IntPtr hwndCallback);
+            foreach (var output in _activeOneShots)
+            {
+                output.Stop();
+                output.Dispose();
+            }
+            _activeOneShots.Clear();
+        }
+    }
+
+    /// <summary>
+    /// WaveStream qui boucle sur le flux source.
+    /// </summary>
+    private sealed class LoopStream : WaveStream
+    {
+        private readonly WaveStream _source;
+
+        public LoopStream(WaveStream source)
+        {
+            _source = source;
+        }
+
+        public override WaveFormat WaveFormat => _source.WaveFormat;
+
+        public override long Length => long.MaxValue;
+
+        public override long Position
+        {
+            get => _source.Position;
+            set => _source.Position = value;
+        }
+
+        public override int Read(byte[] buffer, int offset, int count)
+        {
+            var totalRead = 0;
+            while (totalRead < count)
+            {
+                var read = _source.Read(buffer, offset + totalRead, count - totalRead);
+                if (read == 0)
+                {
+                    _source.Position = 0;
+                    continue;
+                }
+
+                totalRead += read;
+            }
+
+            return totalRead;
+        }
+    }
 }
