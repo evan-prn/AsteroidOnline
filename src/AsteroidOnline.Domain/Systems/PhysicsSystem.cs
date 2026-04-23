@@ -10,7 +10,7 @@ using AsteroidOnline.Domain.World;
 /// Ce système est <b>sans état</b> : toutes les données résident dans les entités.
 /// Il est exécuté à 60 Hz sur le serveur autoritaire (US-27).
 /// </summary>
-public class PhysicsSystem
+public sealed class PhysicsSystem
 {
     // Coefficient de frottement spatial appliqué à chaque tick.
     // Légèrement inférieur à 1 pour simuler l'inertie (flottement spatial).

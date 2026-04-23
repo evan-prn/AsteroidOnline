@@ -4,6 +4,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media;
 using AsteroidOnline.Domain.Entities;
+using AsteroidOnline.Domain.World;
 using AsteroidOnline.Shared.Packets;
 
 namespace AsteroidOnline.Client.Rendering;
@@ -34,13 +35,8 @@ public sealed class GameRenderer
     private static readonly ISolidColorBrush AsteroidMediumBrush = new SolidColorBrush(Color.Parse("#7755AA"));
     private static readonly ISolidColorBrush AsteroidSmallBrush  = new SolidColorBrush(Color.Parse("#553388"));
     private static readonly ISolidColorBrush ProjectileBrush     = new SolidColorBrush(Color.Parse("#FFFF88"));
-    private static readonly ISolidColorBrush ShieldBrush         = new SolidColorBrush(Color.FromArgb(80, 0, 200, 255));
     private static readonly IPen             AsteroidPen          = new Pen(Brushes.White, 1.5);
     private static readonly IPen             ShipPen              = new Pen(Brushes.White, 1.0);
-
-    // Dimensions du monde de jeu (pour la mise à l'échelle)
-    private const float WorldWidth  = 1920f;
-    private const float WorldHeight = 1080f;
 
     /// <summary>
     /// Initialise le renderer sur le canvas fourni.
@@ -61,13 +57,13 @@ public sealed class GameRenderer
     {
         _canvas.Children.Clear();
 
-        var scaleX = _canvas.Bounds.Width  / WorldWidth;
-        var scaleY = _canvas.Bounds.Height / WorldHeight;
+        var scaleX = _canvas.Bounds.Width  / WorldBounds.Default.Width;
+        var scaleY = _canvas.Bounds.Height / WorldBounds.Default.Height;
         var scale  = Math.Min(scaleX, scaleY);
 
         // Offset pour centrer le monde si le canvas n'est pas exactement 16:9
-        var offsetX = (_canvas.Bounds.Width  - WorldWidth  * scale) / 2;
-        var offsetY = (_canvas.Bounds.Height - WorldHeight * scale) / 2;
+        var offsetX = (_canvas.Bounds.Width  - WorldBounds.Default.Width  * scale) / 2;
+        var offsetY = (_canvas.Bounds.Height - WorldBounds.Default.Height * scale) / 2;
 
         // ── Astéroïdes ─────────────────────────────────────────────────────────
         foreach (var a in snapshot.Asteroids)

@@ -38,6 +38,7 @@ public partial class LobbyViewModel : ViewModelBase, IDisposable
     /// <summary>Nombre total de joueurs dans le lobby.</summary>
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(StartSoloCommand))]
+    [NotifyPropertyChangedFor(nameof(CanStartSolo))]
     private int _playerCount;
 
     /// <summary>
@@ -57,11 +58,13 @@ public partial class LobbyViewModel : ViewModelBase, IDisposable
     /// <summary>Indique si le compte à rebours est en cours.</summary>
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(StartSoloCommand))]
+    [NotifyPropertyChangedFor(nameof(CanStartSolo))]
     private bool _isCountingDown;
 
     /// <summary>Identifiant du joueur hôte courant.</summary>
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(StartSoloCommand))]
+    [NotifyPropertyChangedFor(nameof(CanStartSolo))]
     private int _hostPlayerId = -1;
 
     /// <summary>Nom de l'hôte courant.</summary>

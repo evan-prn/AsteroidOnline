@@ -197,6 +197,7 @@ public sealed class GameLoop : INetEventListener, IDisposable
             ship.Position = _spawnSvc.FindSpawnPosition(allEntities);
             ship.IsAlive  = true;
             ship.Velocity = System.Numerics.Vector2.Zero;
+            ship.Score    = 0;
             allEntities.Add(ship);
         }
 

@@ -8,7 +8,7 @@ using AsteroidOnline.Domain.Entities;
 /// Contrôle le cooldown de tir et crée les projectiles à chaque tir valide.
 /// Exécuté côté serveur autoritaire (US-27).
 /// </summary>
-public class WeaponSystem
+public sealed class WeaponSystem
 {
     // Cooldown normal entre deux tirs en secondes.
     private const float NormalCooldown = 0.25f;
@@ -64,14 +64,15 @@ public class WeaponSystem
         // Application du cooldown selon le mode de tir
         ship.WeaponCooldown = hasRapidFire ? RapidFireCooldown : NormalCooldown;
 
-        return new Projectile
+        var projectile = new Projectile
         {
-            Id       = nextProjectileId,
-            OwnerId  = ship.Id,
-            Position = spawnPosition,
+            Id        = nextProjectileId,
+            OwnerId   = ship.Id,
+            Position  = spawnPosition,
             Direction = direction,
-            // Le projectile hérite de la vélocité du vaisseau + sa propre vitesse
-            Velocity  = direction * 700f + ship.Velocity,
         };
+        // La vélocité utilise Speed du projectile pour rester cohérente si Speed est modifié.
+        projectile.Velocity = direction * projectile.Speed + ship.Velocity;
+        return projectile;
     }
 }

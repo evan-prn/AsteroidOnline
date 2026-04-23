@@ -8,7 +8,7 @@ using AsteroidOnline.Domain.Entities;
 /// suivie d'un cooldown de 3 secondes avant réutilisation.
 /// Exécuté côté serveur autoritaire (US-27).
 /// </summary>
-public class DashSystem
+public sealed class DashSystem
 {
     /// <summary>Durée de l'impulsion de dash en secondes.</summary>
     public const float DashDuration = 0.3f;
