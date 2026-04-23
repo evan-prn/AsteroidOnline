@@ -19,21 +19,45 @@
     <!-- ══ HUD Overlay ══════════════════════════════════════════════════════ -->
     <Panel IsHitTestVisible="False">
 
-      <!-- ── Haut gauche : joueurs vivants ──────────────────────────────── -->
-      <Border HorizontalAlignment="Left" VerticalAlignment="Top"
-              Margin="16" Padding="10,6" CornerRadius="6"
-              Background="#CC000010" BorderBrush="#33FFFFFF" BorderThickness="1">
-        <StackPanel Orientation="Horizontal" Spacing="6">
-          <TextBlock Text="&#128101;" FontSize="14" />
-          <TextBlock FontSize="14" Foreground="White">
-            <TextBlock.Text>
-              <MultiBinding StringFormat="{}{0} joueur(s)">
-                <Binding Path="AlivePlayersCount" />
-              </MultiBinding>
-            </TextBlock.Text>
-          </TextBlock>
-        </StackPanel>
-      </Border>
+      <!-- ── Haut gauche : joueurs + FPS + latence ───────────────────────── -->
+      <StackPanel HorizontalAlignment="Left" VerticalAlignment="Top"
+                  Margin="16" Spacing="6">
+
+        <Border Padding="10,6" CornerRadius="6"
+                Background="#CC000010" BorderBrush="#33FFFFFF" BorderThickness="1">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <TextBlock Text="&#128101;" FontSize="14" />
+            <TextBlock FontSize="14" Foreground="White">
+              <TextBlock.Text>
+                <MultiBinding StringFormat="{}{0} joueur(s)">
+                  <Binding Path="AlivePlayersCount" />
+                </MultiBinding>
+              </TextBlock.Text>
+            </TextBlock>
+          </StackPanel>
+        </Border>
+
+        <Border Padding="10,6" CornerRadius="6"
+                Background="#CC000010" BorderBrush="#33FFFFFF" BorderThickness="1">
+          <StackPanel Spacing="3">
+            <TextBlock FontSize="12" Foreground="#88FF99">
+              <TextBlock.Text>
+                <MultiBinding StringFormat="FPS : {0}">
+                  <Binding Path="Fps" />
+                </MultiBinding>
+              </TextBlock.Text>
+            </TextBlock>
+            <TextBlock FontSize="12" Foreground="#55CCFF">
+              <TextBlock.Text>
+                <MultiBinding StringFormat="Ping : {0} ms">
+                  <Binding Path="NetworkLatencyMs" />
+                </MultiBinding>
+              </TextBlock.Text>
+            </TextBlock>
+          </StackPanel>
+        </Border>
+
+      </StackPanel>
 
       <!-- ── Haut droite : score + rang ────────────────────────────────── -->
       <Border HorizontalAlignment="Right" VerticalAlignment="Top"

@@ -55,6 +55,12 @@ public partial class GameViewModel : ViewModelBase, IDisposable
     [ObservableProperty] private string _eliminationFeedText = string.Empty;
     [ObservableProperty] private bool _showEliminationFeed;
 
+    [ObservableProperty] private int _fps;
+    [ObservableProperty] private int _networkLatencyMs;
+
+    private int _frameCount;
+    private long _fpsWindowStart;
+
     public GameViewModel(
         INetworkClientService networkService,
         INavigationService navigationService,
@@ -98,6 +104,17 @@ public partial class GameViewModel : ViewModelBase, IDisposable
         var now = _stopwatch.ElapsedMilliseconds;
         var deltaTime = (now - _lastTickTimestamp) / 1000f;
         _lastTickTimestamp = now;
+
+        _frameCount++;
+        var fpsElapsed = now - _fpsWindowStart;
+        if (fpsElapsed >= 1000)
+        {
+            Fps = (int)Math.Round(_frameCount * 1000.0 / fpsElapsed);
+            _frameCount = 0;
+            _fpsWindowStart = now;
+        }
+
+        NetworkLatencyMs = _networkService.LatencyMs;
 
         _networkService.PollEvents();
 
