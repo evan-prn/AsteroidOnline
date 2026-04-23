@@ -21,3 +21,12 @@ Le panneau de rappel des commandes était en bas à droite, sur la même zone qu
 ## Cohérence Avalonia
 - Le layout reste en bindings MVVM.
 - Les corrections sont localisées à la vue de jeu et au renderer, sans casser l'architecture existante.
+
+## Typographie Arcade Globale
+- La police est désormais pilotée au niveau `App.axaml` pour tout le client.
+- Une pile de polices orientée 8-bit est appliquée globalement sur les contrôles texte
+  principaux (`TextBlock`, `Button`, `TextBox`, `ComboBox`, `CheckBox`, `RadioButton`)
+  avec fallback monospace pour éviter les trous visuels sur les machines qui n'ont pas
+  toutes les fontes.
+- Ce choix garantit une direction visuelle cohérente sur l'ensemble des écrans
+  (connexion, lobby, HUD, game over) sans duplication de styles par vue.
