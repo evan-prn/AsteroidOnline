@@ -37,8 +37,8 @@ public partial class LobbyViewModel : ViewModelBase, IDisposable
 
     /// <summary>Nombre total de joueurs dans le lobby.</summary>
     [ObservableProperty]
-    [NotifyCanExecuteChangedFor(nameof(StartSoloCommand))]
-    [NotifyPropertyChangedFor(nameof(CanStartSolo))]
+    [NotifyCanExecuteChangedFor(nameof(StartGameCommand))]
+    [NotifyPropertyChangedFor(nameof(CanStartGame))]
     private int _playerCount;
 
     /// <summary>
@@ -57,14 +57,14 @@ public partial class LobbyViewModel : ViewModelBase, IDisposable
 
     /// <summary>Indique si le compte à rebours est en cours.</summary>
     [ObservableProperty]
-    [NotifyCanExecuteChangedFor(nameof(StartSoloCommand))]
-    [NotifyPropertyChangedFor(nameof(CanStartSolo))]
+    [NotifyCanExecuteChangedFor(nameof(StartGameCommand))]
+    [NotifyPropertyChangedFor(nameof(CanStartGame))]
     private bool _isCountingDown;
 
     /// <summary>Identifiant du joueur hôte courant.</summary>
     [ObservableProperty]
-    [NotifyCanExecuteChangedFor(nameof(StartSoloCommand))]
-    [NotifyPropertyChangedFor(nameof(CanStartSolo))]
+    [NotifyCanExecuteChangedFor(nameof(StartGameCommand))]
+    [NotifyPropertyChangedFor(nameof(CanStartGame))]
     private int _hostPlayerId = -1;
 
     /// <summary>Nom de l'hôte courant.</summary>
@@ -72,9 +72,13 @@ public partial class LobbyViewModel : ViewModelBase, IDisposable
     private string _hostName = "Aucun";
 
     /// <summary>
-    /// Vrai quand le bouton de lancement solo doit être proposé.
+    /// Vrai quand le bouton Start Game doit être proposé à l'hôte.
     /// </summary>
-    public bool CanStartSolo => PlayerCount == 1 && !IsCountingDown && HostPlayerId == _playerSession.PlayerId;
+    public bool CanStartGame =>
+        _hasReceivedAuthoritativeLobbyState
+        && PlayerCount >= 1
+        && !IsCountingDown
+        && HostPlayerId == _playerSession.PlayerId;
 
     // ──── Constructeur ────────────────────────────────────────────────────────
 
@@ -140,7 +144,7 @@ public partial class LobbyViewModel : ViewModelBase, IDisposable
         {
             // Retour explicite à l'état "lobby en attente" quand on reçoit un état lobby.
             // Sans ce reset, IsCountingDown peut rester bloqué à true après une manche,
-            // ce qui masque le bouton "LANCER EN SOLO".
+            // ce qui masque le bouton de démarrage hôte.
             IsCountingDown = false;
             CountdownSeconds = -1;
             CountdownText = "En attente des joueurs...";
@@ -150,10 +154,11 @@ public partial class LobbyViewModel : ViewModelBase, IDisposable
             foreach (var player in packet.Players)
                 Players.Add(player);
 
+            _playerSession.UpdateRoster(packet.Players);
             PlayerCount = Players.Count;
             HostName = Players.FirstOrDefault(p => p.Id == HostPlayerId)?.Pseudo ?? "Aucun";
-            OnPropertyChanged(nameof(CanStartSolo));
             _hasReceivedAuthoritativeLobbyState = true;
+            OnPropertyChanged(nameof(CanStartGame));
             _lobbySyncRetryTimer.Stop();
         });
     }
@@ -171,7 +176,7 @@ public partial class LobbyViewModel : ViewModelBase, IDisposable
         {
             CountdownSeconds = packet.SecondsRemaining;
             IsCountingDown   = true;
-            OnPropertyChanged(nameof(CanStartSolo));
+            OnPropertyChanged(nameof(CanStartGame));
 
             CountdownText = packet.SecondsRemaining switch
             {
@@ -192,13 +197,13 @@ public partial class LobbyViewModel : ViewModelBase, IDisposable
     partial void OnIsCountingDownChanged(bool value)
     {
         _ = value;
-        OnPropertyChanged(nameof(CanStartSolo));
+        OnPropertyChanged(nameof(CanStartGame));
     }
 
-    [RelayCommand(CanExecute = nameof(CanStartSolo))]
-    private void StartSolo()
+    [RelayCommand(CanExecute = nameof(CanStartGame))]
+    private void StartGame()
     {
-        _networkService.SendReliable(new StartSoloRequestPacket());
+        _networkService.SendReliable(new StartGameRequestPacket());
     }
 
     private void OnLobbySyncRetryTick(object? sender, EventArgs e)
@@ -249,8 +254,9 @@ public partial class LobbyViewModel : ViewModelBase, IDisposable
             IsHost = true,
         });
 
+        _playerSession.UpdateRoster(Players);
         PlayerCount = 1;
-        OnPropertyChanged(nameof(CanStartSolo));
+        OnPropertyChanged(nameof(CanStartGame));
     }
 
     public void Dispose()

@@ -5,61 +5,95 @@
              xmlns:conv="using:AsteroidOnline.Client.Converters"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
+             mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="700"
              x:Class="AsteroidOnline.Client.Views.LobbyView"
              x:DataType="vm:LobbyViewModel"
-             Background="#0A0A1A">
+             Background="#080B14">
 
-  <Grid RowDefinitions="Auto,*,Auto" Margin="40">
+  <Grid RowDefinitions="Auto,*,Auto" Margin="28">
+    <Border Grid.Row="0"
+            Padding="18,14"
+            CornerRadius="10"
+            Background="#A0081220"
+            BorderBrush="#55F7BF59"
+            BorderThickness="1">
+      <Grid ColumnDefinitions="*,Auto">
+        <StackPanel Spacing="5">
+          <TextBlock Text="CO-OP LOBBY"
+                     FontSize="34"
+                     FontWeight="Bold"
+                     LetterSpacing="3"
+                     Foreground="#FFC96A" />
+          <TextBlock FontSize="13" Foreground="#BCD6F1">
+            <TextBlock.Text>
+              <MultiBinding StringFormat="{}{0} pilote(s) prêt(s)">
+                <Binding Path="PlayerCount" />
+              </MultiBinding>
+            </TextBlock.Text>
+          </TextBlock>
+          <TextBlock FontSize="13" Foreground="#9CC0E2">
+            <TextBlock.Text>
+              <MultiBinding StringFormat="Hôte : {0}">
+                <Binding Path="HostName" />
+              </MultiBinding>
+            </TextBlock.Text>
+          </TextBlock>
+        </StackPanel>
 
-    <!-- ══ En-tête ══════════════════════════════════════════════════════════ -->
-    <StackPanel Grid.Row="0" Margin="0,0,0,24">
-      <TextBlock Text="LOBBY" FontSize="32" FontWeight="Bold"
-                 Foreground="#00CFFF" LetterSpacing="4" />
-      <TextBlock FontSize="14" Foreground="#557799" Margin="0,4,0,0">
-        <TextBlock.Text>
-          <MultiBinding StringFormat="{}{0} joueur(s) connecté(s)">
-            <Binding Path="PlayerCount" />
-          </MultiBinding>
-        </TextBlock.Text>
-      </TextBlock>
-      <TextBlock FontSize="13" Foreground="#9FC3E8" Margin="0,6,0,0">
-        <TextBlock.Text>
-          <MultiBinding StringFormat="Hôte : {0}">
-            <Binding Path="HostName" />
-          </MultiBinding>
-        </TextBlock.Text>
-      </TextBlock>
-    </StackPanel>
+        <Border Grid.Column="1"
+                IsVisible="{Binding CanStartGame}"
+                Background="#1A2E1B"
+                BorderBrush="#66B5FF7A"
+                BorderThickness="1"
+                CornerRadius="6"
+                Padding="10,6"
+                VerticalAlignment="Top">
+          <TextBlock Text="COMMANDER ACCESS"
+                     FontSize="11"
+                     FontWeight="Bold"
+                     Foreground="#BCFF8B"
+                     LetterSpacing="1.4" />
+        </Border>
+      </Grid>
+    </Border>
 
-    <!-- ══ Liste des joueurs (US-04) ════════════════════════════════════════ -->
-    <Border Grid.Row="1" Background="#0D1520" CornerRadius="8" Padding="16">
+    <Border Grid.Row="1"
+            Margin="0,16,0,0"
+            Background="#C00B1322"
+            CornerRadius="10"
+            Padding="14"
+            BorderBrush="#445FA2E0"
+            BorderThickness="1">
       <ScrollViewer VerticalScrollBarVisibility="Auto">
         <ItemsControl ItemsSource="{Binding Players}">
           <ItemsControl.ItemTemplate>
             <DataTemplate x:DataType="shared:LobbyPlayerInfo">
-              <Border Background="#111827" CornerRadius="6" Padding="12,10" Margin="0,0,0,6">
-                <Grid ColumnDefinitions="Auto,12,*">
-
-                  <!-- Indicateur coloré du vaisseau (US-05) -->
-                  <Canvas Grid.Column="0" Width="32" Height="32">
-                    <Polygon Points="16,2 4,28 16,22 28,28"
+              <Border Background="#A1111F34"
+                      CornerRadius="8"
+                      Padding="12,10"
+                      Margin="0,0,0,8"
+                      BorderBrush="#304B79"
+                      BorderThickness="1">
+                <Grid ColumnDefinitions="Auto,12,*,Auto">
+                  <Canvas Grid.Column="0" Width="34" Height="34">
+                    <Polygon Points="17,2 4,30 17,23 30,30"
                              Fill="{Binding ColorHex, Converter={x:Static conv:StringToBrushConverter.Instance}}"
-                             Stroke="#FFFFFF22" StrokeThickness="1" />
+                             Stroke="#FFFFFF22"
+                             StrokeThickness="1" />
                   </Canvas>
 
-                  <!-- Pseudo du joueur -->
-                  <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                    <TextBlock Text="{Binding Pseudo}"
-                               Foreground="White"
-                               FontSize="16"
-                               VerticalAlignment="Center" />
+                  <StackPanel Grid.Column="2"
+                              Orientation="Horizontal"
+                              Spacing="8"
+                              VerticalAlignment="Center">
+                    <TextBlock Text="{Binding Pseudo}" FontSize="17" Foreground="#EAF4FF" />
                     <Border IsVisible="{Binding IsHost}"
-                            Background="#2E496F"
+                            Background="#264D2D"
+                            BorderBrush="#66B8FF83"
+                            BorderThickness="1"
                             CornerRadius="4"
-                            Padding="6,2"
-                            VerticalAlignment="Center">
-                      <TextBlock Text="HÔTE" Foreground="#EAF4FF" FontSize="11" FontWeight="Bold" />
+                            Padding="6,2">
+                      <TextBlock Text="HÔTE" FontSize="11" FontWeight="Bold" Foreground="#CBFFAB" />
                     </Border>
                   </StackPanel>
                 </Grid>
@@ -70,56 +104,53 @@
       </ScrollViewer>
     </Border>
 
-    <!-- ══ Compte à rebours (US-06) ══════════════════════════════════════ -->
-    <Border Grid.Row="2" Margin="0,16,0,0" HorizontalAlignment="Center">
-      <StackPanel HorizontalAlignment="Center" Spacing="4">
-
-        <!-- Message d'attente ou compte à rebours -->
+    <Border Grid.Row="2"
+            Margin="0,16,0,0"
+            HorizontalAlignment="Center"
+            Padding="8"
+            CornerRadius="10"
+            Background="#99060C19"
+            BorderBrush="#44FFFFFF"
+            BorderThickness="1">
+      <StackPanel Spacing="8" HorizontalAlignment="Center">
         <TextBlock Text="{Binding CountdownText}"
                    FontSize="48"
                    FontWeight="Bold"
-                   Foreground="#00CFFF"
-                   HorizontalAlignment="Center">
-          <TextBlock.Transitions>
-            <Transitions>
-              <DoubleTransition Property="Opacity" Duration="0:0:0.3" />
-            </Transitions>
-          </TextBlock.Transitions>
-        </TextBlock>
+                   Foreground="#56E4FF"
+                   HorizontalAlignment="Center" />
 
-        <!-- Barre visuelle du compte à rebours (5 segments fixes) -->
-        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="4"
+        <StackPanel Orientation="Horizontal"
+                    HorizontalAlignment="Center"
+                    Spacing="4"
                     IsVisible="{Binding IsCountingDown}">
-          <Border Width="40" Height="6" CornerRadius="3"
+          <Border Width="42" Height="7" CornerRadius="4"
                   Background="{Binding CountdownSeconds, Converter={x:Static conv:CountdownSegmentConverter.Instance},
                                ConverterParameter='0'}" />
-          <Border Width="40" Height="6" CornerRadius="3"
+          <Border Width="42" Height="7" CornerRadius="4"
                   Background="{Binding CountdownSeconds, Converter={x:Static conv:CountdownSegmentConverter.Instance},
                                ConverterParameter='1'}" />
-          <Border Width="40" Height="6" CornerRadius="3"
+          <Border Width="42" Height="7" CornerRadius="4"
                   Background="{Binding CountdownSeconds, Converter={x:Static conv:CountdownSegmentConverter.Instance},
                                ConverterParameter='2'}" />
-          <Border Width="40" Height="6" CornerRadius="3"
+          <Border Width="42" Height="7" CornerRadius="4"
                   Background="{Binding CountdownSeconds, Converter={x:Static conv:CountdownSegmentConverter.Instance},
                                ConverterParameter='3'}" />
-          <Border Width="40" Height="6" CornerRadius="3"
+          <Border Width="42" Height="7" CornerRadius="4"
                   Background="{Binding CountdownSeconds, Converter={x:Static conv:CountdownSegmentConverter.Instance},
                                ConverterParameter='4'}" />
         </StackPanel>
 
-        <Button Content="LANCER EN SOLO"
-                Command="{Binding StartSoloCommand}"
-                IsVisible="{Binding CanStartSolo}"
+        <Button Content="START GAME"
+                Command="{Binding StartGameCommand}"
+                IsVisible="{Binding CanStartGame}"
                 HorizontalAlignment="Center"
-                Margin="0,12,0,0"
-                Background="#00CFFF"
-                Foreground="#0A0A1A"
+                FontSize="16"
                 FontWeight="Bold"
-                Padding="18,8"
-                CornerRadius="4" />
-
+                Padding="28,10"
+                Background="#FFC44F"
+                Foreground="#0D121D"
+                CornerRadius="6" />
       </StackPanel>
     </Border>
-
   </Grid>
 </UserControl>

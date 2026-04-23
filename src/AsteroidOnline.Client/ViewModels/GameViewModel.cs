@@ -25,6 +25,7 @@ public partial class GameViewModel : ViewModelBase, IDisposable
     private readonly INetworkClientService _networkService;
     private readonly INavigationService _navigationService;
     private readonly PlayerSession _playerSession;
+    private readonly IGameAudioService _gameAudioService;
 
     private readonly DispatcherTimer _gameTimer;
     private readonly Stopwatch _stopwatch = Stopwatch.StartNew();
@@ -42,6 +43,7 @@ public partial class GameViewModel : ViewModelBase, IDisposable
     // Prediction locale du dash
     private float _dashCooldownRemaining;
     private bool _dashWasPressedLastFrame;
+    private bool _fireWasPressedLastFrame;
 
     /// <summary>Identifiant du joueur local en session.</summary>
     public int LocalPlayerId => _playerSession.PlayerId;
@@ -49,8 +51,11 @@ public partial class GameViewModel : ViewModelBase, IDisposable
     [ObservableProperty] private int _alivePlayersCount;
     [ObservableProperty] private int _myScore;
     [ObservableProperty] private int _myRank = 1;
+    [ObservableProperty] private int _myLives = 3;
     [ObservableProperty] private double _dashCooldownProgress = 1.0;
     [ObservableProperty] private bool _isDashReady = true;
+    [ObservableProperty] private bool _isInvulnerable;
+    [ObservableProperty] private double _invulnerabilitySecondsRemaining;
 
     [ObservableProperty] private string _eliminationFeedText = string.Empty;
     [ObservableProperty] private bool _showEliminationFeed;
@@ -64,11 +69,13 @@ public partial class GameViewModel : ViewModelBase, IDisposable
     public GameViewModel(
         INetworkClientService networkService,
         INavigationService navigationService,
-        PlayerSession playerSession)
+        PlayerSession playerSession,
+        IGameAudioService gameAudioService)
     {
         _networkService = networkService;
         _navigationService = navigationService;
         _playerSession = playerSession;
+        _gameAudioService = gameAudioService;
 
         _networkService.PacketReceived += OnPacketReceived;
 
@@ -88,7 +95,7 @@ public partial class GameViewModel : ViewModelBase, IDisposable
     {
         _inputHandler?.Dispose();
         _inputHandler = new InputHandler(inputSource);
-        _renderer = new GameRenderer(gameCanvas);
+        _renderer = new GameRenderer(gameCanvas, _gameAudioService);
     }
 
     /// <summary>
@@ -133,12 +140,13 @@ public partial class GameViewModel : ViewModelBase, IDisposable
         });
 
         UpdateDashPrediction(inputState, deltaTime);
+        UpdateShotAudio(inputState);
 
         if (_renderer is not null)
         {
             var renderSnapshot = BuildRenderSnapshot();
             if (renderSnapshot is not null)
-                _renderer.Render(renderSnapshot, LocalPlayerId);
+                _renderer.Render(renderSnapshot, LocalPlayerId, _playerSession.GetRosterSnapshot());
         }
     }
 
@@ -158,6 +166,15 @@ public partial class GameViewModel : ViewModelBase, IDisposable
             : 1.0 - (_dashCooldownRemaining / DashSystem.CooldownDuration);
 
         IsDashReady = _dashCooldownRemaining <= 0f;
+    }
+
+    private void UpdateShotAudio(PlayerInputState inputState)
+    {
+        var fireJustPressed = inputState.Fire && !_fireWasPressedLastFrame;
+        if (fireJustPressed)
+            _gameAudioService.PlayShot();
+
+        _fireWasPressedLastFrame = inputState.Fire;
     }
 
     private void OnPacketReceived(PacketType type, BinaryReader reader)
@@ -197,6 +214,9 @@ public partial class GameViewModel : ViewModelBase, IDisposable
                 _dashCooldownRemaining = (1f - mySnap.DashCooldownProgress)
                     * DashSystem.CooldownDuration;
                 MyScore = mySnap.Score;
+                MyLives = mySnap.LivesRemaining;
+                IsInvulnerable = mySnap.IsInvulnerable;
+                InvulnerabilitySecondsRemaining = mySnap.InvulnerabilityRemaining;
             }
 
             MyRank = ComputeRank(packet, LocalPlayerId);
@@ -278,8 +298,8 @@ public partial class GameViewModel : ViewModelBase, IDisposable
             result.Players.Add(new PlayerSnapshot
             {
                 Id = p.Id,
-                X = Lerp(p0?.X ?? p.X, p.X, alpha),
-                Y = Lerp(p0?.Y ?? p.Y, p.Y, alpha),
+                X = LerpWrapped(p0?.X ?? p.X, p.X, alpha, AsteroidOnline.Domain.World.WorldBounds.Default.Width),
+                Y = LerpWrapped(p0?.Y ?? p.Y, p.Y, alpha, AsteroidOnline.Domain.World.WorldBounds.Default.Height),
                 Rotation = LerpAngle(p0?.Rotation ?? p.Rotation, p.Rotation, alpha),
                 VelocityX = Lerp(p0?.VelocityX ?? p.VelocityX, p.VelocityX, alpha),
                 VelocityY = Lerp(p0?.VelocityY ?? p.VelocityY, p.VelocityY, alpha),
@@ -287,6 +307,9 @@ public partial class GameViewModel : ViewModelBase, IDisposable
                 IsAlive = p.IsAlive,
                 DashCooldownProgress = Lerp(p0?.DashCooldownProgress ?? p.DashCooldownProgress, p.DashCooldownProgress, alpha),
                 Score = p.Score,
+                LivesRemaining = p.LivesRemaining,
+                IsInvulnerable = p.IsInvulnerable,
+                InvulnerabilityRemaining = p.InvulnerabilityRemaining,
             });
         }
 
@@ -297,8 +320,8 @@ public partial class GameViewModel : ViewModelBase, IDisposable
             result.Asteroids.Add(new AsteroidSnapshot
             {
                 Id = a.Id,
-                X = Lerp(a0?.X ?? a.X, a.X, alpha),
-                Y = Lerp(a0?.Y ?? a.Y, a.Y, alpha),
+                X = LerpWrapped(a0?.X ?? a.X, a.X, alpha, AsteroidOnline.Domain.World.WorldBounds.Default.Width),
+                Y = LerpWrapped(a0?.Y ?? a.Y, a.Y, alpha, AsteroidOnline.Domain.World.WorldBounds.Default.Height),
                 Rotation = LerpAngle(a0?.Rotation ?? a.Rotation, a.Rotation, alpha),
                 Size = a.Size,
                 HitPoints = a.HitPoints,
@@ -312,8 +335,8 @@ public partial class GameViewModel : ViewModelBase, IDisposable
             result.Projectiles.Add(new ProjectileSnapshot
             {
                 Id = pr.Id,
-                X = Lerp(pr0?.X ?? pr.X, pr.X, alpha),
-                Y = Lerp(pr0?.Y ?? pr.Y, pr.Y, alpha),
+                X = LerpWrapped(pr0?.X ?? pr.X, pr.X, alpha, AsteroidOnline.Domain.World.WorldBounds.Default.Width),
+                Y = LerpWrapped(pr0?.Y ?? pr.Y, pr.Y, alpha, AsteroidOnline.Domain.World.WorldBounds.Default.Height),
                 OwnerId = pr.OwnerId,
             });
         }
@@ -337,6 +360,18 @@ public partial class GameViewModel : ViewModelBase, IDisposable
     }
 
     private static float Lerp(float a, float b, float t) => a + ((b - a) * t);
+
+    private static float LerpWrapped(float a, float b, float t, float worldSize)
+    {
+        var delta = b - a;
+        if (MathF.Abs(delta) > worldSize / 2f)
+            delta -= MathF.Sign(delta) * worldSize;
+
+        var value = a + (delta * t);
+        while (value < 0f) value += worldSize;
+        while (value >= worldSize) value -= worldSize;
+        return value;
+    }
 
     private static float LerpAngle(float a, float b, float t)
     {

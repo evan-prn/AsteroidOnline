@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+﻿<UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:AsteroidOnline.Client.ViewModels"
              xmlns:conv="using:AsteroidOnline.Client.Converters"
@@ -7,128 +7,156 @@
              mc:Ignorable="d" d:DesignWidth="1280" d:DesignHeight="720"
              x:Class="AsteroidOnline.Client.Views.GameView"
              x:DataType="vm:GameViewModel"
-             Background="#05050F"
+             Background="#070A12"
              Focusable="True">
 
   <Grid>
+    <Canvas x:Name="GameCanvas"
+            Background="#05060D"
+            HorizontalAlignment="Stretch"
+            VerticalAlignment="Stretch" />
 
-    <!-- ══ Canvas de jeu ════════════════════════════════════════════════════ -->
-    <Canvas x:Name="GameCanvas" Background="#05050F"
-            HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
-
-    <!-- ══ HUD Overlay ══════════════════════════════════════════════════════ -->
     <Panel IsHitTestVisible="False">
+      <Border HorizontalAlignment="Left"
+              VerticalAlignment="Top"
+              Margin="16"
+              Padding="12,8"
+              CornerRadius="8"
+              Background="#A10C1626"
+              BorderBrush="#55FFB84D"
+              BorderThickness="1">
+        <StackPanel Spacing="4">
+          <TextBlock Text="SQUAD STATUS"
+                     FontSize="11"
+                     Foreground="#FFD47B"
+                     FontWeight="Bold"
+                     LetterSpacing="1.8" />
+          <TextBlock FontSize="14" Foreground="#E7F0FF">
+            <TextBlock.Text>
+              <MultiBinding StringFormat="{}{0} pilote(s) actif(s)">
+                <Binding Path="AlivePlayersCount" />
+              </MultiBinding>
+            </TextBlock.Text>
+          </TextBlock>
+          <TextBlock FontSize="14" Foreground="#AEE2FF">
+            <TextBlock.Text>
+              <MultiBinding StringFormat="Vies : {0}">
+                <Binding Path="MyLives" />
+              </MultiBinding>
+            </TextBlock.Text>
+          </TextBlock>
+          <TextBlock FontSize="12"
+                     Foreground="#FFF174"
+                     IsVisible="{Binding IsInvulnerable}">
+            <TextBlock.Text>
+              <MultiBinding StringFormat="Invulnérable : {0:0.0}s">
+                <Binding Path="InvulnerabilitySecondsRemaining" />
+              </MultiBinding>
+            </TextBlock.Text>
+          </TextBlock>
+        </StackPanel>
+      </Border>
 
-      <!-- ── Haut gauche : joueurs + FPS + latence ───────────────────────── -->
-      <StackPanel HorizontalAlignment="Left" VerticalAlignment="Top"
-                  Margin="16" Spacing="6">
-
-        <Border Padding="10,6" CornerRadius="6"
-                Background="#CC000010" BorderBrush="#33FFFFFF" BorderThickness="1">
-          <StackPanel Orientation="Horizontal" Spacing="6">
-            <TextBlock Text="&#128101;" FontSize="14" />
-            <TextBlock FontSize="14" Foreground="White">
-              <TextBlock.Text>
-                <MultiBinding StringFormat="{}{0} joueur(s)">
-                  <Binding Path="AlivePlayersCount" />
-                </MultiBinding>
-              </TextBlock.Text>
-            </TextBlock>
-          </StackPanel>
-        </Border>
-
-        <Border Padding="10,6" CornerRadius="6"
-                Background="#CC000010" BorderBrush="#33FFFFFF" BorderThickness="1">
-          <StackPanel Spacing="3">
-            <TextBlock FontSize="12" Foreground="#88FF99">
-              <TextBlock.Text>
-                <MultiBinding StringFormat="FPS : {0}">
-                  <Binding Path="Fps" />
-                </MultiBinding>
-              </TextBlock.Text>
-            </TextBlock>
-            <TextBlock FontSize="12" Foreground="#55CCFF">
-              <TextBlock.Text>
-                <MultiBinding StringFormat="Ping : {0} ms">
-                  <Binding Path="NetworkLatencyMs" />
-                </MultiBinding>
-              </TextBlock.Text>
-            </TextBlock>
-          </StackPanel>
-        </Border>
-
-      </StackPanel>
-
-      <!-- ── Haut droite : score + rang ────────────────────────────────── -->
-      <Border HorizontalAlignment="Right" VerticalAlignment="Top"
-              Margin="16" Padding="10,6" CornerRadius="6"
-              Background="#CC000010" BorderBrush="#33FFFFFF" BorderThickness="1">
+      <Border HorizontalAlignment="Right"
+              VerticalAlignment="Top"
+              Margin="16"
+              Padding="12,8"
+              CornerRadius="8"
+              Background="#A1091321"
+              BorderBrush="#5575C3FF"
+              BorderThickness="1">
         <StackPanel Spacing="2" HorizontalAlignment="Right">
-          <TextBlock FontSize="14" Foreground="#D3E7FF" HorizontalAlignment="Right">
+          <TextBlock FontSize="14" Foreground="#DDEBFF" HorizontalAlignment="Right">
             <TextBlock.Text>
               <MultiBinding StringFormat="Score : {0}">
                 <Binding Path="MyScore" />
               </MultiBinding>
             </TextBlock.Text>
           </TextBlock>
-          <TextBlock FontSize="12" Foreground="#A9C8E8" HorizontalAlignment="Right">
+          <TextBlock FontSize="12" Foreground="#B6CAEB" HorizontalAlignment="Right">
             <TextBlock.Text>
-              <MultiBinding StringFormat="Rang #{0}">
+              <MultiBinding StringFormat="Rang coop : #{0}">
                 <Binding Path="MyRank" />
+              </MultiBinding>
+            </TextBlock.Text>
+          </TextBlock>
+          <TextBlock FontSize="12" Foreground="#88FFAA" HorizontalAlignment="Right">
+            <TextBlock.Text>
+              <MultiBinding StringFormat="FPS {0}">
+                <Binding Path="Fps" />
+              </MultiBinding>
+            </TextBlock.Text>
+          </TextBlock>
+          <TextBlock FontSize="12" Foreground="#72CCFF" HorizontalAlignment="Right">
+            <TextBlock.Text>
+              <MultiBinding StringFormat="Ping {0} ms">
+                <Binding Path="NetworkLatencyMs" />
               </MultiBinding>
             </TextBlock.Text>
           </TextBlock>
         </StackPanel>
       </Border>
 
-      <!-- ── Centre haut : feed d'éliminations (US-24) ─────────────────── -->
-      <Border HorizontalAlignment="Center" VerticalAlignment="Top"
-              Margin="0,16,0,0" Padding="12,6" CornerRadius="6"
-              Background="#CC220010" BorderBrush="#55FF4444" BorderThickness="1"
+      <Border HorizontalAlignment="Center"
+              VerticalAlignment="Top"
+              Margin="0,16,0,0"
+              Padding="14,8"
+              CornerRadius="10"
+              Background="#C01D0F1D"
+              BorderBrush="#66FF6767"
+              BorderThickness="1"
               IsVisible="{Binding ShowEliminationFeed}">
         <TextBlock Text="{Binding EliminationFeedText}"
-                   Foreground="#FFD2D2" FontSize="15" FontWeight="SemiBold" />
+                   Foreground="#FFE3E3"
+                   FontSize="15"
+                   FontWeight="SemiBold" />
       </Border>
 
-      <!-- ── Bas gauche : barre de recharge du dash (US-11) ─────────────── -->
-      <Border HorizontalAlignment="Left" VerticalAlignment="Bottom"
-              Margin="16" Padding="10,8" CornerRadius="6"
-              Background="#CC000010" BorderBrush="#33FFFFFF" BorderThickness="1">
-        <StackPanel Spacing="4" Width="140">
-
+      <Border HorizontalAlignment="Left"
+              VerticalAlignment="Bottom"
+              Margin="16"
+              Padding="10,8"
+              CornerRadius="8"
+              Background="#A10A1523"
+              BorderBrush="#553ECFFF"
+              BorderThickness="1">
+        <StackPanel Spacing="4" Width="170">
           <StackPanel Orientation="Horizontal" Spacing="6">
             <TextBlock Text="DASH" FontSize="11" FontWeight="Bold" LetterSpacing="2"
                        Foreground="{Binding IsDashReady,
                            Converter={x:Static conv:BoolToColorConverter.Instance},
-                           ConverterParameter='#00CFFF|#445566'}" />
-            <TextBlock Text="[SHIFT/E]" FontSize="11" Foreground="#7B9BBC" />
+                           ConverterParameter='#43DAFF|#56697C'}" />
+            <TextBlock Text="[SHIFT / E]" FontSize="11" Foreground="#88AFCF" />
           </StackPanel>
 
-          <Border Height="6" CornerRadius="3" Background="#1E3A5F">
-            <Border HorizontalAlignment="Left" Height="6" CornerRadius="3"
+          <Border Height="7" CornerRadius="3" Background="#1F3B58">
+            <Border HorizontalAlignment="Left"
+                    Height="7"
+                    CornerRadius="3"
                     Width="{Binding DashCooldownProgress,
-                            Converter={x:Static conv:ProgressToWidthConverter.Instance},
-                            ConverterParameter='136'}"
+                        Converter={x:Static conv:ProgressToWidthConverter.Instance},
+                        ConverterParameter='166'}"
                     Background="{Binding IsDashReady,
                         Converter={x:Static conv:BoolToColorConverter.Instance},
-                        ConverterParameter='#00CFFF|#224455'}" />
+                        ConverterParameter='#00D4FF|#30516E'}" />
           </Border>
-
         </StackPanel>
       </Border>
 
-      <!-- ── Bas droite : contrôles (rappel) ────────────────────────────── -->
-      <Border HorizontalAlignment="Right" VerticalAlignment="Bottom"
-              Margin="16" Padding="10,8" CornerRadius="6"
-              Background="#88000010" BorderBrush="#22FFFFFF" BorderThickness="1">
+      <Border HorizontalAlignment="Center"
+              VerticalAlignment="Bottom"
+              Margin="16"
+              Padding="10,8"
+              CornerRadius="8"
+              Background="#86090E1B"
+              BorderBrush="#33FFFFFF"
+              BorderThickness="1">
         <StackPanel Spacing="2">
-          <TextBlock Text="WASD / ZQSD / Flèches  Piloter" FontSize="12" Foreground="#9FBDDD" />
-          <TextBlock Text="ESPACE / F                Tirer" FontSize="12" Foreground="#9FBDDD" />
-          <TextBlock Text="SHIFT / E                  Dash" FontSize="12" Foreground="#9FBDDD" />
+          <TextBlock Text="WASD / ZQSD / Flèches : piloter" FontSize="12" Foreground="#A4C4E6" />
+          <TextBlock Text="ESPACE / F : tir coopératif" FontSize="12" Foreground="#A4C4E6" />
+          <TextBlock Text="Radar : coin bas droit" FontSize="12" Foreground="#FFCF7F" />
         </StackPanel>
       </Border>
-
     </Panel>
-
   </Grid>
 </UserControl>

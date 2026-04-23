@@ -185,6 +185,7 @@ public partial class ConnectViewModel : ViewModelBase
             ConnectionStatus = ConnectionStatus.Connected;
             StatusMessage    = $"Connecté — ID joueur : {packet.PlayerId}";
             _playerSession.PlayerId = packet.PlayerId;
+            _playerSession.EnsureLocalPlayerRegistered();
 
             // Navigation vers le lobby (US-02) : se désabonner puis naviguer.
             _networkService.PacketReceived -= OnPacketReceived;

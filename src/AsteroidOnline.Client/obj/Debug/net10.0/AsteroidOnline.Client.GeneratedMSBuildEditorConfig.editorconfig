@@ -17,26 +17,26 @@ build_property.PlatformNeutralAssembly =
 build_property.EnforceExtendedAnalyzerRules = 
 build_property._SupportedPlatformList = Linux,macOS,Windows
 build_property.RootNamespace = AsteroidOnline.Client
-build_property.ProjectDir = /home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Client/
+build_property.ProjectDir = C:\Users\oui\Asteroid\AsteroidOnline\src\AsteroidOnline.Client\
 build_property.EnableComHosting = 
 build_property.EnableGeneratedComInterfaceComImportInterop = 
 build_property.EffectiveAnalysisLevelStyle = 10.0
 build_property.EnableCodeStyleSeverity = 
 
-[/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Client/App.axaml]
+[C:/Users/oui/Asteroid/AsteroidOnline/src/AsteroidOnline.Client/App.axaml]
 build_metadata.AdditionalFiles.SourceItemGroup = AvaloniaXaml
 
-[/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Client/Views/ConnectView.axaml]
+[C:/Users/oui/Asteroid/AsteroidOnline/src/AsteroidOnline.Client/Views/ConnectView.axaml]
 build_metadata.AdditionalFiles.SourceItemGroup = AvaloniaXaml
 
-[/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Client/Views/GameOverView.axaml]
+[C:/Users/oui/Asteroid/AsteroidOnline/src/AsteroidOnline.Client/Views/GameOverView.axaml]
 build_metadata.AdditionalFiles.SourceItemGroup = AvaloniaXaml
 
-[/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Client/Views/GameView.axaml]
+[C:/Users/oui/Asteroid/AsteroidOnline/src/AsteroidOnline.Client/Views/GameView.axaml]
 build_metadata.AdditionalFiles.SourceItemGroup = AvaloniaXaml
 
-[/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Client/Views/LobbyView.axaml]
+[C:/Users/oui/Asteroid/AsteroidOnline/src/AsteroidOnline.Client/Views/LobbyView.axaml]
 build_metadata.AdditionalFiles.SourceItemGroup = AvaloniaXaml
 
-[/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Client/Views/MainWindow.axaml]
+[C:/Users/oui/Asteroid/AsteroidOnline/src/AsteroidOnline.Client/Views/MainWindow.axaml]
 build_metadata.AdditionalFiles.SourceItemGroup = AvaloniaXaml

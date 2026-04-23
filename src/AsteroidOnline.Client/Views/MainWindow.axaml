@@ -8,9 +8,9 @@
         x:DataType="vm:MainWindowViewModel"
         Icon="/Assets/avalonia-logo.ico"
         Title="AsteroidOnline"
-        Width="800" Height="600"
-        MinWidth="640" MinHeight="480"
-        Background="#0A0A1A">
+        Width="1360" Height="820"
+        MinWidth="980" MinHeight="620"
+        Background="#060910">
 
     <Design.DataContext>
         <vm:MainWindowViewModel />
