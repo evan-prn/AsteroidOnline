@@ -12,6 +12,9 @@ public interface INetworkClientService
     /// <summary>Indique si le client est actuellement connecté au serveur.</summary>
     bool IsConnected { get; }
 
+    /// <summary>Latence réseau aller-retour mesurée par LiteNetLib (en ms).</summary>
+    int LatencyMs { get; }
+
     /// <summary>
     /// Événement déclenché à la réception de tout paquet venant du serveur.
     /// Le <see cref="BinaryReader"/> est positionné immédiatement après l'octet de type ;

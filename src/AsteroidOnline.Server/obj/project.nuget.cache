@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "Tfdhgl184Rk=",
+  "dgSpecHash": "kUdHnORWjqQ=",
   "success": true,
   "projectFilePath": "/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Server/AsteroidOnline.Server.csproj",
   "expectedPackageFiles": [
@@ -16,7 +16,10 @@
     "/home/evan/.nuget/packages/microsoft.extensions.logging.console/10.0.0/microsoft.extensions.logging.console.10.0.0.nupkg.sha512",
     "/home/evan/.nuget/packages/microsoft.extensions.options/10.0.0/microsoft.extensions.options.10.0.0.nupkg.sha512",
     "/home/evan/.nuget/packages/microsoft.extensions.options.configurationextensions/10.0.0/microsoft.extensions.options.configurationextensions.10.0.0.nupkg.sha512",
-    "/home/evan/.nuget/packages/microsoft.extensions.primitives/10.0.0/microsoft.extensions.primitives.10.0.0.nupkg.sha512"
+    "/home/evan/.nuget/packages/microsoft.extensions.primitives/10.0.0/microsoft.extensions.primitives.10.0.0.nupkg.sha512",
+    "/home/evan/.nuget/packages/microsoft.netcore.app.runtime.linux-x64/10.0.6/microsoft.netcore.app.runtime.linux-x64.10.0.6.nupkg.sha512",
+    "/home/evan/.nuget/packages/microsoft.aspnetcore.app.runtime.linux-x64/10.0.6/microsoft.aspnetcore.app.runtime.linux-x64.10.0.6.nupkg.sha512",
+    "/home/evan/.nuget/packages/microsoft.netcore.app.host.linux-x64/10.0.6/microsoft.netcore.app.host.linux-x64.10.0.6.nupkg.sha512"
   ],
   "logs": []
 }

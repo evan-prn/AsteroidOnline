@@ -34,6 +34,9 @@ public sealed class LiteNetClientService : INetworkClientService, INetEventListe
     public bool IsConnected => _serverPeer?.ConnectionState == ConnectionState.Connected;
 
     /// <inheritdoc/>
+    public int LatencyMs => _serverPeer?.RoundTripTime ?? 0;
+
+    /// <inheritdoc/>
     public event Action<PacketType, BinaryReader>? PacketReceived;
 
     /// <inheritdoc/>
@@ -171,7 +174,7 @@ public sealed class LiteNetClientService : INetworkClientService, INetEventListe
     public void OnNetworkReceiveUnconnected(IPEndPoint remoteEndPoint,
         NetPacketReader reader, UnconnectedMessageType messageType) { }
 
-    /// <summary>Mise à jour de la latence (non utilisée dans ce bloc).</summary>
+    /// <summary>Mise à jour de la latence — mise à jour automatique de RoundTripTime.</summary>
     public void OnNetworkLatencyUpdate(NetPeer peer, int latency) { }
 
     /// <summary>Demandes de connexion entrantes rejetées (le client n'accepte pas de pairs).</summary>
