@@ -17,6 +17,8 @@ C'est la correction la plus durable contre les deadlocks réseau/UX.
 
 ### Décision
 Le démarrage n'est plus lié à un seuil de joueurs, mais au rôle hôte + phase lobby.
+Le lobby local autorise aussi explicitement le lancement solo avant la première
+resynchronisation complète du serveur.
 
 ### Pourquoi
 Cela rend le flux cohérent pour solo et multijoueur avec la même logique métier.

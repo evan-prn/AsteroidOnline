@@ -75,10 +75,10 @@ public partial class LobbyViewModel : ViewModelBase, IDisposable
     /// Vrai quand le bouton Start Game doit être proposé à l'hôte.
     /// </summary>
     public bool CanStartGame =>
-        _hasReceivedAuthoritativeLobbyState
-        && PlayerCount >= 1
+        PlayerCount >= 1
         && !IsCountingDown
-        && HostPlayerId == _playerSession.PlayerId;
+        && HostPlayerId == _playerSession.PlayerId
+        && (_hasReceivedAuthoritativeLobbyState || PlayerCount == 1);
 
     // ──── Constructeur ────────────────────────────────────────────────────────
 
@@ -256,6 +256,7 @@ public partial class LobbyViewModel : ViewModelBase, IDisposable
 
         _playerSession.UpdateRoster(Players);
         PlayerCount = 1;
+        _hasReceivedAuthoritativeLobbyState = true;
         OnPropertyChanged(nameof(CanStartGame));
     }
 

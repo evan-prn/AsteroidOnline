@@ -3,6 +3,8 @@
 ## A. Lobby solo et multijoueur
 - [ ] Un joueur seul rejoint le lobby et voit `Start Game` s'il est hôte.
 - [ ] Démarrage solo fonctionnel depuis lobby.
+- [ ] Le bouton `Start Game` est disponible en solo même si la synchro lobby réseau
+  n'a pas encore renvoyé un état complet.
 - [ ] En multi, seul l'hôte peut démarrer.
 - [ ] En multi, les non-hôtes ne peuvent pas lancer la partie via paquet direct.
 

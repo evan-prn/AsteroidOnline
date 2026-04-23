@@ -249,3 +249,7 @@ C:\Users\oui\Asteroid\AsteroidOnline\src\AsteroidOnline.Client\obj\Debug\net10.0
 C:\Users\oui\Asteroid\AsteroidOnline\src\AsteroidOnline.Client\obj\Debug\net10.0\AsteroidOnline.Client.pdb
 C:\Users\oui\Asteroid\AsteroidOnline\src\AsteroidOnline.Client\obj\Debug\net10.0\AsteroidOnline.Client.genruntimeconfig.cache
 C:\Users\oui\Asteroid\AsteroidOnline\src\AsteroidOnline.Client\obj\Debug\net10.0\ref\AsteroidOnline.Client.dll
+C:\Users\oui\Asteroid\AsteroidOnline\src\AsteroidOnline.Client\bin\Debug\net10.0\Assets\Audio\shot.wav
+C:\Users\oui\Asteroid\AsteroidOnline\src\AsteroidOnline.Client\bin\Debug\net10.0\Assets\Audio\asteroid-explosion.wav
+C:\Users\oui\Asteroid\AsteroidOnline\src\AsteroidOnline.Client\bin\Debug\net10.0\Assets\Audio\shot2.mp3
+C:\Users\oui\Asteroid\AsteroidOnline\src\AsteroidOnline.Client\bin\Debug\net10.0\Assets\Audio\ambient.mp3

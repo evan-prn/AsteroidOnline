@@ -96,6 +96,7 @@ public partial class GameViewModel : ViewModelBase, IDisposable
         _inputHandler?.Dispose();
         _inputHandler = new InputHandler(inputSource);
         _renderer = new GameRenderer(gameCanvas, _gameAudioService);
+        _gameAudioService.StartAmbientLoop();
     }
 
     /// <summary>
@@ -385,6 +386,7 @@ public partial class GameViewModel : ViewModelBase, IDisposable
     {
         _gameTimer.Stop();
         _inputHandler?.Dispose();
+        _gameAudioService.StopAmbientLoop();
         _networkService.PacketReceived -= OnPacketReceived;
     }
 }
