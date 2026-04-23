@@ -34,9 +34,13 @@ public sealed class GameLoop : INetEventListener, IDisposable
     private const int    SnapshotEveryNTicks = 3;                      // 20 Hz
     private const string ConnectionKey       = "AsteroidOnline_v1";
     private const int    Port                = 7777;
-    private const int    MaxPlayers          = 16;
+    private const int    MaxPlayers          = 20;
     private const int    CountdownSeconds    = 5;
-    private const int    MinPlayersToStart   = 2;
+    private const int    StartingLives       = 3;
+    private const float  InvulnerabilitySecondsOnHit = 5f;
+    private const float  GameOverAutoReturnDelaySeconds = 8f;
+    private const int    SnapshotAsteroidLimit = 28;
+    private const int    SnapshotProjectileLimit = 36;
 
     // ── Infrastructure réseau ──────────────────────────────────────────────────
     private readonly NetManager _netManager;
@@ -70,11 +74,11 @@ public sealed class GameLoop : INetEventListener, IDisposable
     private int   _countdownRemaining = CountdownSeconds;
     private float _countdownTimer;
     private float _snapshotAccumulator;
+    private float _gameOverElapsed;
+    private int _currentMatchPlayerCount;
     private int   _nextPlayerId = 1;
     private int   _nextProjectileId = 1;
     private readonly CancellationTokenSource _cts = new();
-    private bool _soloModeRequested;
-    private bool _currentMatchIsSolo;
 
     /// <summary>
     /// Initialise la GameLoop et démarre l'écoute réseau sur le port <see cref="Port"/>.
@@ -157,11 +161,7 @@ public sealed class GameLoop : INetEventListener, IDisposable
 
     private void TickLobby(float dt)
     {
-        // Démarrage du compte à rebours dès que le minimum de joueurs est atteint.
-        if (ShouldStartCountdown())
-        {
-            EnterCountdown();
-        }
+        _ = dt;
     }
 
     // ──── Phase Countdown ──────────────────────────────────────────────────────
@@ -185,24 +185,37 @@ public sealed class GameLoop : INetEventListener, IDisposable
         _phase = GamePhase.Playing;
         _latestInputs.Clear();
         _playersReadyForLobby.Clear();
-        _currentMatchIsSolo = _ships.Count == 1;
-        _soloModeRequested = false;
         _snapshotAccumulator = 0f;
+        _gameOverElapsed = 0f;
+        _currentMatchPlayerCount = _ships.Count;
         _waveManager.Reset();
+        _nextProjectileId = 1;
+        _asteroidSvc.Reset();
 
         // Spawn des joueurs à des positions sûres
-        var allEntities = new List<PhysicalEntity>(_ships.Values);
+        var allEntities = new List<PhysicalEntity>(_ships.Values.Count + _asteroids.Count);
+        allEntities.AddRange(_asteroids.Values);
         foreach (var ship in _ships.Values)
         {
             ship.Position = _spawnSvc.FindSpawnPosition(allEntities);
             ship.IsAlive  = true;
             ship.Velocity = System.Numerics.Vector2.Zero;
             ship.Score    = 0;
+            ship.LivesRemaining = StartingLives;
+            ship.InvulnerabilityRemaining = 0f;
+            ship.DashCooldown = 0f;
+            ship.IsDashing = false;
+            ship.DashTimeRemaining = 0f;
+            ship.WeaponCooldown = 0f;
             allEntities.Add(ship);
         }
 
-        // Spawn des 10 astéroïdes initiaux (US-13)
-        foreach (var asteroid in _asteroidSvc.SpawnInitialWave(10))
+        _asteroids.Clear();
+        _projectiles.Clear();
+
+        // Densité d'astéroïdes adaptée à la taille du lobby.
+        var initialAsteroidCount = Math.Clamp(8 + (_ships.Count / 2), 10, 22);
+        foreach (var asteroid in _asteroidSvc.SpawnInitialWave(initialAsteroidCount))
             _asteroids[asteroid.Id] = asteroid;
 
         _logger.LogInformation("Partie démarrée avec {Count} joueur(s)", _ships.Count);
@@ -216,6 +229,8 @@ public sealed class GameLoop : INetEventListener, IDisposable
         foreach (var ship in _ships.Values)
         {
             if (!ship.IsAlive) continue;
+            if (ship.InvulnerabilityRemaining > 0f)
+                ship.InvulnerabilityRemaining = MathF.Max(0f, ship.InvulnerabilityRemaining - dt);
 
             _latestInputs.TryGetValue(ship.Id, out var input);
             var thrustForward = input?.ThrustForward ?? false;
@@ -296,23 +311,12 @@ public sealed class GameLoop : INetEventListener, IDisposable
             DamageAsteroid(hit, proj.OwnerId);
         }
 
-        // Projectile ↔ Joueur (US-22)
-        foreach (var proj in _projectiles.Values.ToList())
-        {
-            var victim = _collision.CheckProjectileVsShips(proj, ships);
-            if (victim is null) continue;
-
-            proj.IsActive = false;
-            _projectiles.Remove(proj.Id);
-            EliminatePlayer(victim, proj.OwnerId);
-        }
-
         // Astéroïde ↔ Joueur (US-15)
-        foreach (var asteroid in _asteroids.Values)
+        foreach (var asteroid in SelectAsteroidsForSnapshot())
         {
             var victim = _collision.CheckAsteroidVsShip(asteroid, ships);
             if (victim is null) continue;
-            EliminatePlayer(victim, -1);
+            ApplyPlayerDamage(victim, "Astéroïde");
         }
     }
 
@@ -339,45 +343,59 @@ public sealed class GameLoop : INetEventListener, IDisposable
         _logger.LogDebug("Astéroïde {Id} détruit", asteroid.Id);
     }
 
-    private void EliminatePlayer(Ship victim, int killerId)
+    private void ApplyPlayerDamage(Ship victim, string sourceName)
     {
-        if (!victim.IsAlive) return;
+        if (!victim.IsAlive || victim.IsInvulnerable)
+            return;
+
+        victim.LivesRemaining = Math.Max(0, victim.LivesRemaining - 1);
+        if (victim.LivesRemaining > 0)
+        {
+            RespawnShipWithInvulnerability(victim);
+            _logger.LogDebug(
+                "{Victim} perd une vie ({Lives} restante(s))",
+                victim.Pseudo,
+                victim.LivesRemaining);
+            return;
+        }
 
         victim.IsAlive = false;
-        _ships.TryGetValue(killerId, out var killer);
-        if (killer is not null && killer.Id != victim.Id)
-            killer.Score += 1000;
+        victim.InvulnerabilityRemaining = 0f;
 
         var packet = new PlayerEliminatedPacket
         {
             VictimId   = victim.Id,
             VictimName = victim.Pseudo,
-            KillerName = killer?.Pseudo ?? "Astéroïde",
+            KillerName = sourceName,
         };
         BroadcastReliable(packet);
 
-        _logger.LogInformation("{Victim} éliminé par {Killer}", victim.Pseudo,
-            killer?.Pseudo ?? "un astéroïde");
+        _logger.LogInformation("{Victim} éliminé par {Killer}", victim.Pseudo, sourceName);
+    }
+
+    private void RespawnShipWithInvulnerability(Ship ship)
+    {
+        var blockers = _asteroids.Values
+            .Cast<PhysicalEntity>()
+            .Concat(_ships.Values.Where(s => s.IsAlive && s.Id != ship.Id))
+            .ToList();
+
+        ship.Position = _spawnSvc.FindSpawnPosition(blockers);
+        ship.Velocity = System.Numerics.Vector2.Zero;
+        ship.IsDashing = false;
+        ship.DashTimeRemaining = 0f;
+        ship.DashCooldown = 0f;
+        ship.WeaponCooldown = 0f;
+        ship.InvulnerabilityRemaining = InvulnerabilitySecondsOnHit;
     }
 
     private void CheckGameOver()
     {
         var alive = _ships.Values.Count(s => s.IsAlive);
-        if (_currentMatchIsSolo)
-        {
-            // En solo, la manche se termine quand le joueur est éliminé.
-            if (alive > 0)
-                return;
-
-            EnterGameOver(winner: null, winnerNameFallback: string.Empty);
-            return;
-        }
-
-        if (alive > 1 || _ships.Count == 0)
+        if (_ships.Count == 0 || alive > 0)
             return;
 
-        var winner = _ships.Values.FirstOrDefault(s => s.IsAlive);
-        EnterGameOver(winner, "Personne");
+        EnterGameOver(winner: null, winnerNameFallback: "Escouade éliminée");
     }
 
     // ──── Broadcast helpers ────────────────────────────────────────────────────
@@ -404,6 +422,9 @@ public sealed class GameLoop : INetEventListener, IDisposable
                 IsAlive              = ship.IsAlive,
                 DashCooldownProgress = DashSystem.GetCooldownProgress(ship),
                 Score                = ship.Score,
+                LivesRemaining       = ship.LivesRemaining,
+                IsInvulnerable       = ship.IsInvulnerable,
+                InvulnerabilityRemaining = ship.InvulnerabilityRemaining,
             });
         }
 
@@ -420,7 +441,7 @@ public sealed class GameLoop : INetEventListener, IDisposable
             });
         }
 
-        foreach (var proj in _projectiles.Values)
+        foreach (var proj in SelectProjectilesForSnapshot())
         {
             snapshot.Projectiles.Add(new ProjectileSnapshot
             {
@@ -531,8 +552,8 @@ public sealed class GameLoop : INetEventListener, IDisposable
                     HandlePlayerInput(peer, br);
                     break;
 
-                case PacketType.StartSoloRequest:
-                    HandleStartSoloRequest(peer, br);
+                case PacketType.StartGameRequest:
+                    HandleStartGameRequest(peer, br);
                     break;
 
                 case PacketType.ReturnToLobbyRequest:
@@ -587,7 +608,7 @@ public sealed class GameLoop : INetEventListener, IDisposable
             (_, existing) => packet.Timestamp >= existing.Timestamp ? packet : existing);
     }
 
-    private void HandleStartSoloRequest(NetPeer peer, BinaryReader reader)
+    private void HandleStartGameRequest(NetPeer peer, BinaryReader reader)
     {
         _ = reader;
         if (_phase != GamePhase.Lobby)
@@ -599,13 +620,18 @@ public sealed class GameLoop : INetEventListener, IDisposable
 
         var hostId = GetHostPlayerId();
         if (entry.Key != hostId)
+        {
+            _logger.LogWarning(
+                "Demande StartGame refusée : joueur non hôte (Id={PlayerId}, Host={HostId})",
+                entry.Key,
+                hostId);
+            return;
+        }
+
+        if (_ships.Count == 0)
             return;
 
-        if (_peers.Count != 1)
-            return;
-
-        _soloModeRequested = true;
-        _logger.LogInformation("Mode solo demandé par le joueur unique connecté");
+        _logger.LogInformation("Démarrage demandé par l'hôte {HostId}", hostId);
         EnterCountdown();
     }
 
@@ -623,6 +649,13 @@ public sealed class GameLoop : INetEventListener, IDisposable
         _logger.LogInformation(
             "Retour lobby confirmé par joueur {Id} ({Ready}/{Total})",
             entry.Key, _playersReadyForLobby.Count, _peers.Count);
+
+        var hostId = GetHostPlayerId();
+        if (entry.Key == hostId)
+        {
+            ResetMatchToLobby();
+            return;
+        }
 
         if (_peers.Count > 0 && _playersReadyForLobby.Count >= _peers.Count)
             ResetMatchToLobby();
@@ -683,9 +716,6 @@ public sealed class GameLoop : INetEventListener, IDisposable
     private int GetHostPlayerId()
         => _ships.Count == 0 ? -1 : _ships.Keys.Min();
 
-    private bool ShouldStartCountdown()
-        => _ships.Count >= MinPlayersToStart || (_soloModeRequested && _ships.Count >= 1);
-
     private void EnterCountdown()
     {
         if (_phase != GamePhase.Lobby)
@@ -701,6 +731,7 @@ public sealed class GameLoop : INetEventListener, IDisposable
     {
         _phase = GamePhase.GameOver;
         _playersReadyForLobby.Clear();
+        _gameOverElapsed = 0f;
 
         var resolvedWinnerName = winner?.Pseudo;
         if (string.IsNullOrWhiteSpace(resolvedWinnerName))
@@ -712,7 +743,7 @@ public sealed class GameLoop : INetEventListener, IDisposable
         {
             WinnerId = winner?.Id ?? -1,
             WinnerName = resolvedWinnerName,
-            IsSoloMode = _currentMatchIsSolo,
+            IsSoloMode = _currentMatchPlayerCount <= 1,
         };
         BroadcastReliable(packet);
 
@@ -721,9 +752,16 @@ public sealed class GameLoop : INetEventListener, IDisposable
 
     private void TickGameOver(float dt)
     {
-        _ = dt;
+        _gameOverElapsed += dt;
         // Si tous les clients quittent pendant l'écran de fin, on remet l'état serveur au lobby.
         if (_peers.Count == 0)
+        {
+            ResetMatchToLobby();
+            return;
+        }
+
+        // Protection anti-blocage si un client ne renvoie jamais ReturnToLobby.
+        if (_gameOverElapsed >= GameOverAutoReturnDelaySeconds)
             ResetMatchToLobby();
     }
 
@@ -733,14 +771,16 @@ public sealed class GameLoop : INetEventListener, IDisposable
         _countdownRemaining = CountdownSeconds;
         _countdownTimer = 0f;
         _snapshotAccumulator = 0f;
-        _soloModeRequested = false;
-        _currentMatchIsSolo = false;
+        _gameOverElapsed = 0f;
+        _currentMatchPlayerCount = 0;
         _latestInputs.Clear();
         _playersReadyForLobby.Clear();
 
         _asteroids.Clear();
         _projectiles.Clear();
         _waveManager.Reset();
+        _nextProjectileId = 1;
+        _asteroidSvc.Reset();
 
         foreach (var ship in _ships.Values)
         {
@@ -750,9 +790,50 @@ public sealed class GameLoop : INetEventListener, IDisposable
             ship.IsDashing = false;
             ship.DashTimeRemaining = 0f;
             ship.WeaponCooldown = 0f;
+            ship.LivesRemaining = StartingLives;
+            ship.InvulnerabilityRemaining = 0f;
         }
 
         BroadcastLobbyState();
         _logger.LogInformation("Session réinitialisée, retour au lobby");
+    }
+    private IEnumerable<Asteroid> SelectAsteroidsForSnapshot()
+    {
+        if (_asteroids.Count <= SnapshotAsteroidLimit)
+            return _asteroids.Values;
+
+        var aliveShips = _ships.Values.Where(ship => ship.IsAlive).ToArray();
+        if (aliveShips.Length == 0)
+            return _asteroids.Values.Take(SnapshotAsteroidLimit).ToArray();
+
+        return _asteroids.Values
+            .OrderBy(asteroid => aliveShips.Min(ship => SquaredWrappedDistance(asteroid.Position, ship.Position)))
+            .Take(SnapshotAsteroidLimit)
+            .ToArray();
+    }
+
+    private IEnumerable<Projectile> SelectProjectilesForSnapshot()
+    {
+        if (_projectiles.Count <= SnapshotProjectileLimit)
+            return _projectiles.Values;
+
+        var aliveShips = _ships.Values.Where(ship => ship.IsAlive).ToArray();
+        if (aliveShips.Length == 0)
+            return _projectiles.Values.Take(SnapshotProjectileLimit).ToArray();
+
+        return _projectiles.Values
+            .OrderBy(projectile => aliveShips.Min(ship => SquaredWrappedDistance(projectile.Position, ship.Position)))
+            .Take(SnapshotProjectileLimit)
+            .ToArray();
+    }
+
+    private float SquaredWrappedDistance(System.Numerics.Vector2 a, System.Numerics.Vector2 b)
+    {
+        var dx = MathF.Abs(a.X - b.X);
+        var dy = MathF.Abs(a.Y - b.Y);
+
+        dx = MathF.Min(dx, _bounds.Width - dx);
+        dy = MathF.Min(dy, _bounds.Height - dy);
+        return (dx * dx) + (dy * dy);
     }
 }

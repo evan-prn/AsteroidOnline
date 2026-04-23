@@ -1,64 +1,38 @@
 namespace AsteroidOnline.Shared.Packets;
 
 using AsteroidOnline.Domain.Entities;
+using AsteroidOnline.Domain.World;
 
 /// <summary>
 /// Snapshot d'un vaisseau joueur inclus dans <see cref="GameStateSnapshotPacket"/>.
 /// </summary>
 public sealed class PlayerSnapshot
 {
-    /// <summary>Identifiant unique du joueur.</summary>
     public int Id { get; set; }
-
-    /// <summary>Position X dans le monde (u).</summary>
     public float X { get; set; }
-
-    /// <summary>Position Y dans le monde (u).</summary>
     public float Y { get; set; }
-
-    /// <summary>Angle de rotation en radians.</summary>
     public float Rotation { get; set; }
-
-    /// <summary>Vélocité X (pour l'extrapolation côté client).</summary>
     public float VelocityX { get; set; }
-
-    /// <summary>Vélocité Y (pour l'extrapolation côté client).</summary>
     public float VelocityY { get; set; }
-
-    /// <summary>Couleur du vaisseau.</summary>
     public PlayerColor Color { get; set; }
-
-    /// <summary><see langword="true"/> si le joueur est encore en vie.</summary>
     public bool IsAlive { get; set; }
-
-    /// <summary>Progression de la recharge du dash [0.0 – 1.0].</summary>
     public float DashCooldownProgress { get; set; }
-
-    /// <summary>Score courant du joueur.</summary>
     public int Score { get; set; }
+    public int LivesRemaining { get; set; }
+    public bool IsInvulnerable { get; set; }
+    public float InvulnerabilityRemaining { get; set; }
 }
 
 /// <summary>
-/// Snapshot d'un astéroïde inclus dans <see cref="GameStateSnapshotPacket"/>.
+/// Snapshot d'un asteroide inclus dans <see cref="GameStateSnapshotPacket"/>.
 /// </summary>
 public sealed class AsteroidSnapshot
 {
-    /// <summary>Identifiant unique de l'astéroïde.</summary>
     public int Id { get; set; }
-
-    /// <summary>Position X.</summary>
     public float X { get; set; }
-
-    /// <summary>Position Y.</summary>
     public float Y { get; set; }
-
-    /// <summary>Angle de rotation en radians.</summary>
     public float Rotation { get; set; }
-
-    /// <summary>Taille de l'astéroïde (Large / Medium / Small).</summary>
     public AsteroidSize Size { get; set; }
-
-    /// <summary>Points de vie restants.</summary>
     public int HitPoints { get; set; }
 }
 
@@ -67,143 +41,181 @@ public sealed class AsteroidSnapshot
 /// </summary>
 public sealed class ProjectileSnapshot
 {
-    /// <summary>Identifiant unique du projectile.</summary>
     public int Id { get; set; }
-
-    /// <summary>Position X.</summary>
     public float X { get; set; }
-
-    /// <summary>Position Y.</summary>
     public float Y { get; set; }
-
-    /// <summary>Identifiant du joueur propriétaire (pour la colorisation).</summary>
     public int OwnerId { get; set; }
 }
 
 /// <summary>
-/// Paquet UDP diffusé par le serveur à 20 Hz (toutes les 3 ticks à 60 Hz).
-/// Contient l'état complet du monde : vaisseaux, astéroïdes, projectiles.
-/// Le client interpole entre les snapshots reçus pour un rendu fluide (US-23, US-26).
+/// Snapshot UDP compact du monde.
+/// Les positions et vitesses sont quantifiees pour rester sous la limite de paquet LiteNetLib.
 /// </summary>
 public class GameStateSnapshotPacket : IPacket
 {
-    /// <inheritdoc/>
+    private const float MaxEncodedVelocity = 1024f;
+
     public PacketType Type => PacketType.GameStateSnapshot;
 
-    /// <summary>Timestamp serveur en millisecondes (pour l'interpolation client).</summary>
     public long ServerTimestamp { get; set; }
-
-    /// <summary>Nombre de joueurs encore en vie (pour le HUD US-29).</summary>
     public int AlivePlayersCount { get; set; }
-
-    /// <summary>Snapshots de tous les vaisseaux (vivants et morts inclus).</summary>
     public List<PlayerSnapshot> Players { get; set; } = new();
-
-    /// <summary>Snapshots de tous les astéroïdes actifs.</summary>
     public List<AsteroidSnapshot> Asteroids { get; set; } = new();
-
-    /// <summary>Snapshots de tous les projectiles actifs.</summary>
     public List<ProjectileSnapshot> Projectiles { get; set; } = new();
 
-    /// <inheritdoc/>
     public void Serialize(BinaryWriter writer)
     {
         writer.Write(ServerTimestamp);
-        writer.Write(AlivePlayersCount);
+        writer.Write((byte)Math.Clamp(AlivePlayersCount, 0, byte.MaxValue));
 
-        // ── Joueurs ────────────────────────────────────────────────────────
-        writer.Write(Players.Count);
+        writer.Write((byte)Math.Clamp(Players.Count, 0, byte.MaxValue));
         foreach (var p in Players)
         {
-            writer.Write(p.Id);
-            writer.Write(p.X);
-            writer.Write(p.Y);
-            writer.Write(p.Rotation);
-            writer.Write(p.VelocityX);
-            writer.Write(p.VelocityY);
+            writer.Write((byte)Math.Clamp(p.Id, 0, byte.MaxValue));
+            writer.Write(QuantizePosition(p.X, WorldBounds.Default.Width));
+            writer.Write(QuantizePosition(p.Y, WorldBounds.Default.Height));
+            writer.Write(QuantizeAngle(p.Rotation));
+            writer.Write(QuantizeVelocity(p.VelocityX));
+            writer.Write(QuantizeVelocity(p.VelocityY));
             writer.Write((byte)p.Color);
-            writer.Write(p.IsAlive);
-            writer.Write(p.DashCooldownProgress);
-            writer.Write(p.Score);
+
+            var flags = (byte)0;
+            if (p.IsAlive)
+                flags |= 0x01;
+            if (p.IsInvulnerable)
+                flags |= 0x02;
+            writer.Write(flags);
+
+            writer.Write((byte)Math.Clamp((int)MathF.Round(p.DashCooldownProgress * 255f), 0, 255));
+            writer.Write((ushort)Math.Clamp(p.Score, 0, ushort.MaxValue));
+            writer.Write((byte)Math.Clamp(p.LivesRemaining, 0, byte.MaxValue));
+            writer.Write((byte)Math.Clamp((int)MathF.Round(p.InvulnerabilityRemaining * 10f), 0, byte.MaxValue));
         }
 
-        // ── Astéroïdes ─────────────────────────────────────────────────────
-        writer.Write(Asteroids.Count);
-        foreach (var a in Asteroids)
+        writer.Write((byte)Math.Clamp(Asteroids.Count, 0, byte.MaxValue));
+        foreach (var asteroid in Asteroids)
         {
-            writer.Write(a.Id);
-            writer.Write(a.X);
-            writer.Write(a.Y);
-            writer.Write(a.Rotation);
-            writer.Write((byte)a.Size);
-            writer.Write(a.HitPoints);
+            writer.Write((ushort)Math.Clamp(asteroid.Id, 0, ushort.MaxValue));
+            writer.Write(QuantizePosition(asteroid.X, WorldBounds.Default.Width));
+            writer.Write(QuantizePosition(asteroid.Y, WorldBounds.Default.Height));
+            writer.Write(QuantizeAngle(asteroid.Rotation));
+            writer.Write((byte)asteroid.Size);
+            writer.Write((byte)Math.Clamp(asteroid.HitPoints, 0, byte.MaxValue));
         }
 
-        // ── Projectiles ────────────────────────────────────────────────────
-        writer.Write(Projectiles.Count);
-        foreach (var pr in Projectiles)
+        writer.Write((byte)Math.Clamp(Projectiles.Count, 0, byte.MaxValue));
+        foreach (var projectile in Projectiles)
         {
-            writer.Write(pr.Id);
-            writer.Write(pr.X);
-            writer.Write(pr.Y);
-            writer.Write(pr.OwnerId);
+            writer.Write((ushort)Math.Clamp(projectile.Id, 0, ushort.MaxValue));
+            writer.Write(QuantizePosition(projectile.X, WorldBounds.Default.Width));
+            writer.Write(QuantizePosition(projectile.Y, WorldBounds.Default.Height));
+            writer.Write((byte)Math.Clamp(projectile.OwnerId, 0, byte.MaxValue));
         }
     }
 
-    /// <inheritdoc/>
     public void Deserialize(BinaryReader reader)
     {
-        ServerTimestamp    = reader.ReadInt64();
-        AlivePlayersCount  = reader.ReadInt32();
+        ServerTimestamp = reader.ReadInt64();
+        AlivePlayersCount = reader.ReadByte();
 
-        // ── Joueurs ────────────────────────────────────────────────────────
-        var playerCount = reader.ReadInt32();
+        var playerCount = reader.ReadByte();
         Players.Clear();
         for (var i = 0; i < playerCount; i++)
         {
+            var id = reader.ReadByte();
+            var x = DequantizePosition(reader.ReadUInt16(), WorldBounds.Default.Width);
+            var y = DequantizePosition(reader.ReadUInt16(), WorldBounds.Default.Height);
+            var rotation = DequantizeAngle(reader.ReadUInt16());
+            var velocityX = DequantizeVelocity(reader.ReadInt16());
+            var velocityY = DequantizeVelocity(reader.ReadInt16());
+            var color = (PlayerColor)reader.ReadByte();
+            var flags = reader.ReadByte();
+            var dash = reader.ReadByte() / 255f;
+            var score = reader.ReadUInt16();
+            var lives = reader.ReadByte();
+            var invulnerability = reader.ReadByte() / 10f;
+
             Players.Add(new PlayerSnapshot
             {
-                Id                   = reader.ReadInt32(),
-                X                    = reader.ReadSingle(),
-                Y                    = reader.ReadSingle(),
-                Rotation             = reader.ReadSingle(),
-                VelocityX            = reader.ReadSingle(),
-                VelocityY            = reader.ReadSingle(),
-                Color                = (PlayerColor)reader.ReadByte(),
-                IsAlive              = reader.ReadBoolean(),
-                DashCooldownProgress = reader.ReadSingle(),
-                Score                = reader.ReadInt32(),
+                Id = id,
+                X = x,
+                Y = y,
+                Rotation = rotation,
+                VelocityX = velocityX,
+                VelocityY = velocityY,
+                Color = color,
+                IsAlive = (flags & 0x01) != 0,
+                IsInvulnerable = (flags & 0x02) != 0,
+                DashCooldownProgress = dash,
+                Score = score,
+                LivesRemaining = lives,
+                InvulnerabilityRemaining = invulnerability,
             });
         }
 
-        // ── Astéroïdes ─────────────────────────────────────────────────────
-        var asteroidCount = reader.ReadInt32();
+        var asteroidCount = reader.ReadByte();
         Asteroids.Clear();
         for (var i = 0; i < asteroidCount; i++)
         {
             Asteroids.Add(new AsteroidSnapshot
             {
-                Id        = reader.ReadInt32(),
-                X         = reader.ReadSingle(),
-                Y         = reader.ReadSingle(),
-                Rotation  = reader.ReadSingle(),
-                Size      = (AsteroidSize)reader.ReadByte(),
-                HitPoints = reader.ReadInt32(),
+                Id = reader.ReadUInt16(),
+                X = DequantizePosition(reader.ReadUInt16(), WorldBounds.Default.Width),
+                Y = DequantizePosition(reader.ReadUInt16(), WorldBounds.Default.Height),
+                Rotation = DequantizeAngle(reader.ReadUInt16()),
+                Size = (AsteroidSize)reader.ReadByte(),
+                HitPoints = reader.ReadByte(),
             });
         }
 
-        // ── Projectiles ────────────────────────────────────────────────────
-        var projCount = reader.ReadInt32();
+        var projectileCount = reader.ReadByte();
         Projectiles.Clear();
-        for (var i = 0; i < projCount; i++)
+        for (var i = 0; i < projectileCount; i++)
         {
             Projectiles.Add(new ProjectileSnapshot
             {
-                Id      = reader.ReadInt32(),
-                X       = reader.ReadSingle(),
-                Y       = reader.ReadSingle(),
-                OwnerId = reader.ReadInt32(),
+                Id = reader.ReadUInt16(),
+                X = DequantizePosition(reader.ReadUInt16(), WorldBounds.Default.Width),
+                Y = DequantizePosition(reader.ReadUInt16(), WorldBounds.Default.Height),
+                OwnerId = reader.ReadByte(),
             });
         }
     }
+
+    private static ushort QuantizePosition(float value, float worldSize)
+    {
+        var clamped = Math.Clamp(value, 0f, worldSize);
+        var normalized = clamped / worldSize;
+        return (ushort)Math.Clamp((int)MathF.Round(normalized * ushort.MaxValue), 0, ushort.MaxValue);
+    }
+
+    private static float DequantizePosition(ushort value, float worldSize)
+        => value / (float)ushort.MaxValue * worldSize;
+
+    private static ushort QuantizeAngle(float angle)
+    {
+        var normalized = angle % (MathF.PI * 2f);
+        if (normalized < 0f)
+            normalized += MathF.PI * 2f;
+
+        return (ushort)Math.Clamp(
+            (int)MathF.Round(normalized / (MathF.PI * 2f) * ushort.MaxValue),
+            0,
+            ushort.MaxValue);
+    }
+
+    private static float DequantizeAngle(ushort value)
+        => value / (float)ushort.MaxValue * MathF.PI * 2f;
+
+    private static short QuantizeVelocity(float velocity)
+    {
+        var clamped = Math.Clamp(velocity, -MaxEncodedVelocity, MaxEncodedVelocity);
+        return (short)Math.Clamp(
+            (int)MathF.Round(clamped / MaxEncodedVelocity * short.MaxValue),
+            short.MinValue,
+            short.MaxValue);
+    }
+
+    private static float DequantizeVelocity(short value)
+        => value / (float)short.MaxValue * MaxEncodedVelocity;
 }

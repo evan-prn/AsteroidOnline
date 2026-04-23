@@ -1,22 +1,22 @@
 {
   "version": 2,
-  "dgSpecHash": "Tfdhgl184Rk=",
+  "dgSpecHash": "LPXQYrgMb8I=",
   "success": true,
-  "projectFilePath": "/home/evan/Developpement/AsteroidOnline/src/AsteroidOnline.Server/AsteroidOnline.Server.csproj",
+  "projectFilePath": "C:\\Users\\oui\\Asteroid\\AsteroidOnline\\src\\AsteroidOnline.Server\\AsteroidOnline.Server.csproj",
   "expectedPackageFiles": [
-    "/home/evan/.nuget/packages/litenetlib/2.1.2/litenetlib.2.1.2.nupkg.sha512",
-    "/home/evan/.nuget/packages/microsoft.extensions.configuration/10.0.0/microsoft.extensions.configuration.10.0.0.nupkg.sha512",
-    "/home/evan/.nuget/packages/microsoft.extensions.configuration.abstractions/10.0.0/microsoft.extensions.configuration.abstractions.10.0.0.nupkg.sha512",
-    "/home/evan/.nuget/packages/microsoft.extensions.configuration.binder/10.0.0/microsoft.extensions.configuration.binder.10.0.0.nupkg.sha512",
-    "/home/evan/.nuget/packages/microsoft.extensions.dependencyinjection/10.0.0/microsoft.extensions.dependencyinjection.10.0.0.nupkg.sha512",
-    "/home/evan/.nuget/packages/microsoft.extensions.dependencyinjection.abstractions/10.0.0/microsoft.extensions.dependencyinjection.abstractions.10.0.0.nupkg.sha512",
-    "/home/evan/.nuget/packages/microsoft.extensions.logging/10.0.0/microsoft.extensions.logging.10.0.0.nupkg.sha512",
-    "/home/evan/.nuget/packages/microsoft.extensions.logging.abstractions/10.0.0/microsoft.extensions.logging.abstractions.10.0.0.nupkg.sha512",
-    "/home/evan/.nuget/packages/microsoft.extensions.logging.configuration/10.0.0/microsoft.extensions.logging.configuration.10.0.0.nupkg.sha512",
-    "/home/evan/.nuget/packages/microsoft.extensions.logging.console/10.0.0/microsoft.extensions.logging.console.10.0.0.nupkg.sha512",
-    "/home/evan/.nuget/packages/microsoft.extensions.options/10.0.0/microsoft.extensions.options.10.0.0.nupkg.sha512",
-    "/home/evan/.nuget/packages/microsoft.extensions.options.configurationextensions/10.0.0/microsoft.extensions.options.configurationextensions.10.0.0.nupkg.sha512",
-    "/home/evan/.nuget/packages/microsoft.extensions.primitives/10.0.0/microsoft.extensions.primitives.10.0.0.nupkg.sha512"
+    "C:\\Users\\oui\\.nuget\\packages\\litenetlib\\2.1.2\\litenetlib.2.1.2.nupkg.sha512",
+    "C:\\Users\\oui\\.nuget\\packages\\microsoft.extensions.configuration\\10.0.0\\microsoft.extensions.configuration.10.0.0.nupkg.sha512",
+    "C:\\Users\\oui\\.nuget\\packages\\microsoft.extensions.configuration.abstractions\\10.0.0\\microsoft.extensions.configuration.abstractions.10.0.0.nupkg.sha512",
+    "C:\\Users\\oui\\.nuget\\packages\\microsoft.extensions.configuration.binder\\10.0.0\\microsoft.extensions.configuration.binder.10.0.0.nupkg.sha512",
+    "C:\\Users\\oui\\.nuget\\packages\\microsoft.extensions.dependencyinjection\\10.0.0\\microsoft.extensions.dependencyinjection.10.0.0.nupkg.sha512",
+    "C:\\Users\\oui\\.nuget\\packages\\microsoft.extensions.dependencyinjection.abstractions\\10.0.0\\microsoft.extensions.dependencyinjection.abstractions.10.0.0.nupkg.sha512",
+    "C:\\Users\\oui\\.nuget\\packages\\microsoft.extensions.logging\\10.0.0\\microsoft.extensions.logging.10.0.0.nupkg.sha512",
+    "C:\\Users\\oui\\.nuget\\packages\\microsoft.extensions.logging.abstractions\\10.0.0\\microsoft.extensions.logging.abstractions.10.0.0.nupkg.sha512",
+    "C:\\Users\\oui\\.nuget\\packages\\microsoft.extensions.logging.configuration\\10.0.0\\microsoft.extensions.logging.configuration.10.0.0.nupkg.sha512",
+    "C:\\Users\\oui\\.nuget\\packages\\microsoft.extensions.logging.console\\10.0.0\\microsoft.extensions.logging.console.10.0.0.nupkg.sha512",
+    "C:\\Users\\oui\\.nuget\\packages\\microsoft.extensions.options\\10.0.0\\microsoft.extensions.options.10.0.0.nupkg.sha512",
+    "C:\\Users\\oui\\.nuget\\packages\\microsoft.extensions.options.configurationextensions\\10.0.0\\microsoft.extensions.options.configurationextensions.10.0.0.nupkg.sha512",
+    "C:\\Users\\oui\\.nuget\\packages\\microsoft.extensions.primitives\\10.0.0\\microsoft.extensions.primitives.10.0.0.nupkg.sha512"
   ],
   "logs": []
 }

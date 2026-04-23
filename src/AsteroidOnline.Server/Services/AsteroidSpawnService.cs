@@ -163,4 +163,10 @@ public sealed class AsteroidSpawnService
         AngularVelocity = fragment.AngularVelocity,
         IsActive        = true,
     };
+
+    /// <summary>RÃ©initialise le gÃ©nÃ©rateur d'identifiants pour une nouvelle manche.</summary>
+    public void Reset()
+    {
+        _nextId = 1000;
+    }
 }

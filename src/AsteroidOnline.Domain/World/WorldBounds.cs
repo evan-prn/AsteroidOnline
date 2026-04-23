@@ -13,6 +13,6 @@ public readonly struct WorldBounds
     /// <summary>Hauteur du monde en unités de jeu.</summary>
     public float Height { get; init; }
 
-    /// <summary>Dimensions par défaut : 1920 × 1080 unités (ratio 16:9).</summary>
-    public static readonly WorldBounds Default = new() { Width = 1920f, Height = 1080f };
+    /// <summary>Dimensions par défaut : 3200 × 1800 unités (ratio 16:9).</summary>
+    public static readonly WorldBounds Default = new() { Width = 3200f, Height = 1800f };
 }

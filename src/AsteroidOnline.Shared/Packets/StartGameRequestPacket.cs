@@ -1,13 +1,13 @@
 namespace AsteroidOnline.Shared.Packets;
 
 /// <summary>
-/// Paquet client -&gt; serveur pour demander le lancement d'une manche solo
-/// depuis le lobby quand un seul joueur est connecté.
+/// Paquet client -&gt; serveur pour demander le lancement de la manche
+/// depuis le lobby. Seul l'hôte est autorisé côté serveur.
 /// </summary>
-public sealed class StartSoloRequestPacket : IPacket
+public sealed class StartGameRequestPacket : IPacket
 {
     /// <inheritdoc/>
-    public PacketType Type => PacketType.StartSoloRequest;
+    public PacketType Type => PacketType.StartGameRequest;
 
     /// <inheritdoc/>
     public void Serialize(BinaryWriter writer)

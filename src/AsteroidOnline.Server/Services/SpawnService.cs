@@ -12,13 +12,13 @@ using AsteroidOnline.Domain.World;
 public sealed class SpawnService
 {
     // Rayon de la zone de sécurité autour du point de spawn.
-    private const float SafeZoneRadius = 150f;
+    private const float SafeZoneRadius = 220f;
 
     // Nombre maximum de tentatives avant d'utiliser la position la moins dangereuse.
-    private const int MaxAttempts = 50;
+    private const int MaxAttempts = 80;
 
     // Marge par rapport aux bords du monde pour éviter un spawn exactement sur un bord.
-    private const float EdgeMargin = 80f;
+    private const float EdgeMargin = 120f;
 
     private readonly Random _random;
     private readonly WorldBounds _bounds;

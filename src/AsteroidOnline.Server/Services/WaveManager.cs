@@ -13,7 +13,7 @@ public sealed class WaveManager
     private const float WaveInterval = 30f;
 
     // Nombre maximum d'astéroïdes simultanés.
-    public const int MaxAsteroids = 80;
+    public const int MaxAsteroids = 48;
 
     private float _waveTimer;
 

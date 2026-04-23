@@ -23,6 +23,17 @@ public class Ship : PhysicalEntity
     /// </summary>
     public int Score { get; set; }
 
+    /// <summary>Nombre de vies restantes (3 par défaut).</summary>
+    public int LivesRemaining { get; set; } = 3;
+
+    /// <summary>
+    /// Temps d'invulnérabilité restant en secondes.
+    /// </summary>
+    public float InvulnerabilityRemaining { get; set; }
+
+    /// <summary>Indique si le joueur est invulnérable.</summary>
+    public bool IsInvulnerable => InvulnerabilityRemaining > 0f;
+
     // ──── Paramètres de mouvement (US-08) ────────────────────────────────────
 
     /// <summary>
