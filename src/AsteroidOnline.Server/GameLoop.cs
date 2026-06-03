@@ -50,8 +50,13 @@ public sealed class GameLoop : INetEventListener, IDisposable
     private readonly WorldBounds       _bounds   = WorldBounds.Default;
     private readonly Dictionary<int, Ship>      _ships      = new();
     private readonly Dictionary<int, NetPeer>   _peers      = new();
+    private readonly Dictionary<NetPeer, int>   _peerPlayerIds = new();
     private readonly Dictionary<int, Asteroid>  _asteroids  = new();
     private readonly Dictionary<int, Projectile> _projectiles = new();
+    private readonly List<Ship> _shipsCollisionBuffer = new(MaxPlayers);
+    private readonly List<int> _projectilesToRemove = new(64);
+    private readonly List<(int ProjectileId, int AsteroidId, int OwnerId)> _projectileAsteroidHits = new(64);
+    private readonly List<PhysicalEntity> _spawnBlockersBuffer = new(128);
 
     // Dernier input connu par joueur (thread-safe, mis à jour côté réseau).
     // Le tick serveur applique toujours la simulation au même rythme, indépendamment
@@ -256,19 +261,19 @@ public sealed class GameLoop : INetEventListener, IDisposable
             _physics.Tick(asteroid, dt, in _bounds);
 
         // 3. Physique et durée de vie des projectiles
-        var projectilesToRemove = new List<int>();
+        _projectilesToRemove.Clear();
         foreach (var proj in _projectiles.Values)
         {
             proj.LifetimeRemaining -= dt;
             if (proj.LifetimeRemaining <= 0f)
             {
                 proj.IsActive = false;
-                projectilesToRemove.Add(proj.Id);
+                _projectilesToRemove.Add(proj.Id);
                 continue;
             }
             _physics.Tick(proj, dt, in _bounds);
         }
-        foreach (var id in projectilesToRemove)
+        foreach (var id in _projectilesToRemove)
             _projectiles.Remove(id);
 
         // 4. Détection de collisions
@@ -298,23 +303,32 @@ public sealed class GameLoop : INetEventListener, IDisposable
 
     private void ProcessCollisions()
     {
-        var ships = _ships.Values.ToList();
+        _shipsCollisionBuffer.Clear();
+        foreach (var ship in _ships.Values)
+            _shipsCollisionBuffer.Add(ship);
 
         // Projectile ↔ Astéroïde
-        foreach (var proj in _projectiles.Values.ToList())
+        _projectileAsteroidHits.Clear();
+        foreach (var proj in _projectiles.Values)
         {
             var hit = _collision.CheckProjectileVsAsteroids(proj, _asteroids.Values);
             if (hit is null) continue;
 
             proj.IsActive = false;
-            _projectiles.Remove(proj.Id);
-            DamageAsteroid(hit, proj.OwnerId);
+            _projectileAsteroidHits.Add((proj.Id, hit.Id, proj.OwnerId));
+        }
+
+        foreach (var hit in _projectileAsteroidHits)
+        {
+            _projectiles.Remove(hit.ProjectileId);
+            if (_asteroids.TryGetValue(hit.AsteroidId, out var asteroid))
+                DamageAsteroid(asteroid, hit.OwnerId);
         }
 
         // Astéroïde ↔ Joueur (US-15)
-        foreach (var asteroid in SelectAsteroidsForSnapshot())
+        foreach (var asteroid in _asteroids.Values)
         {
-            var victim = _collision.CheckAsteroidVsShip(asteroid, ships);
+            var victim = _collision.CheckAsteroidVsShip(asteroid, _shipsCollisionBuffer);
             if (victim is null) continue;
             ApplyPlayerDamage(victim, "Astéroïde");
         }
@@ -375,12 +389,16 @@ public sealed class GameLoop : INetEventListener, IDisposable
 
     private void RespawnShipWithInvulnerability(Ship ship)
     {
-        var blockers = _asteroids.Values
-            .Cast<PhysicalEntity>()
-            .Concat(_ships.Values.Where(s => s.IsAlive && s.Id != ship.Id))
-            .ToList();
+        _spawnBlockersBuffer.Clear();
+        foreach (var asteroid in _asteroids.Values)
+            _spawnBlockersBuffer.Add(asteroid);
+        foreach (var otherShip in _ships.Values)
+        {
+            if (otherShip.IsAlive && otherShip.Id != ship.Id)
+                _spawnBlockersBuffer.Add(otherShip);
+        }
 
-        ship.Position = _spawnSvc.FindSpawnPosition(blockers);
+        ship.Position = _spawnSvc.FindSpawnPosition(_spawnBlockersBuffer);
         ship.Velocity = System.Numerics.Vector2.Zero;
         ship.IsDashing = false;
         ship.DashTimeRemaining = 0f;
@@ -401,6 +419,12 @@ public sealed class GameLoop : INetEventListener, IDisposable
     // ──── Broadcast helpers ────────────────────────────────────────────────────
 
     private void BroadcastSnapshot()
+    {
+        foreach (var peer in _peers)
+            Send(peer.Value, CreateSnapshotForPlayer(peer.Key), DeliveryMethod.Unreliable);
+    }
+
+    private GameStateSnapshotPacket CreateSnapshotForPlayer(int recipientPlayerId)
     {
         var snapshot = new GameStateSnapshotPacket
         {
@@ -428,7 +452,7 @@ public sealed class GameLoop : INetEventListener, IDisposable
             });
         }
 
-        foreach (var asteroid in _asteroids.Values)
+        foreach (var asteroid in SelectAsteroidsForSnapshot(recipientPlayerId))
         {
             snapshot.Asteroids.Add(new AsteroidSnapshot
             {
@@ -441,7 +465,7 @@ public sealed class GameLoop : INetEventListener, IDisposable
             });
         }
 
-        foreach (var proj in SelectProjectilesForSnapshot())
+        foreach (var proj in SelectProjectilesForSnapshot(recipientPlayerId))
         {
             snapshot.Projectiles.Add(new ProjectileSnapshot
             {
@@ -452,7 +476,7 @@ public sealed class GameLoop : INetEventListener, IDisposable
             });
         }
 
-        BroadcastUnreliable(snapshot);
+        return snapshot;
     }
 
     private void BroadcastCountdown(int seconds)
@@ -509,16 +533,16 @@ public sealed class GameLoop : INetEventListener, IDisposable
 
     public void OnPeerDisconnected(NetPeer peer, DisconnectInfo info)
     {
-        var entry = _peers.FirstOrDefault(kv => kv.Value == peer);
-        if (entry.Value is null) return;
+        if (!_peerPlayerIds.TryGetValue(peer, out var playerId)) return;
 
-        _peers.Remove(entry.Key);
-        _latestInputs.TryRemove(entry.Key, out _);
-        _playersReadyForLobby.Remove(entry.Key);
-        if (_ships.TryGetValue(entry.Key, out var ship))
+        _peerPlayerIds.Remove(peer);
+        _peers.Remove(playerId);
+        _latestInputs.TryRemove(playerId, out _);
+        _playersReadyForLobby.Remove(playerId);
+        if (_ships.TryGetValue(playerId, out var ship))
         {
             ship.IsAlive = false;
-            _ships.Remove(entry.Key);
+            _ships.Remove(playerId);
         }
 
         if (_phase == GamePhase.GameOver && _peers.Count > 0 &&
@@ -528,7 +552,7 @@ public sealed class GameLoop : INetEventListener, IDisposable
         }
 
         BroadcastLobbyState();
-        _logger.LogInformation("Joueur {Id} déconnecté", entry.Key);
+        _logger.LogInformation("Joueur {Id} déconnecté", playerId);
     }
 
     public void OnNetworkReceive(NetPeer peer, NetPacketReader reader,
@@ -586,6 +610,7 @@ public sealed class GameLoop : INetEventListener, IDisposable
 
         _ships[id]  = ship;
         _peers[id]  = peer;
+        _peerPlayerIds[peer] = id;
 
         // Confirmation LobbyJoined
         Send(peer, new LobbyJoinedPacket { PlayerId = id, Message = "Bienvenue !" },
@@ -597,13 +622,12 @@ public sealed class GameLoop : INetEventListener, IDisposable
 
     private void HandlePlayerInput(NetPeer peer, BinaryReader reader)
     {
-        var entry = _peers.FirstOrDefault(kv => kv.Value == peer);
-        if (entry.Value is null) return;
+        if (!_peerPlayerIds.TryGetValue(peer, out var playerId)) return;
 
         var packet = new PlayerInputPacket();
         packet.Deserialize(reader);
         _latestInputs.AddOrUpdate(
-            entry.Key,
+            playerId,
             packet,
             (_, existing) => packet.Timestamp >= existing.Timestamp ? packet : existing);
     }
@@ -614,16 +638,15 @@ public sealed class GameLoop : INetEventListener, IDisposable
         if (_phase != GamePhase.Lobby)
             return;
 
-        var entry = _peers.FirstOrDefault(kv => kv.Value == peer);
-        if (entry.Value is null)
+        if (!_peerPlayerIds.TryGetValue(peer, out var playerId))
             return;
 
         var hostId = GetHostPlayerId();
-        if (entry.Key != hostId)
+        if (playerId != hostId)
         {
             _logger.LogWarning(
                 "Demande StartGame refusée : joueur non hôte (Id={PlayerId}, Host={HostId})",
-                entry.Key,
+                playerId,
                 hostId);
             return;
         }
@@ -641,17 +664,16 @@ public sealed class GameLoop : INetEventListener, IDisposable
         if (_phase != GamePhase.GameOver)
             return;
 
-        var entry = _peers.FirstOrDefault(kv => kv.Value == peer);
-        if (entry.Value is null)
+        if (!_peerPlayerIds.TryGetValue(peer, out var playerId))
             return;
 
-        _playersReadyForLobby.Add(entry.Key);
+        _playersReadyForLobby.Add(playerId);
         _logger.LogInformation(
             "Retour lobby confirmé par joueur {Id} ({Ready}/{Total})",
-            entry.Key, _playersReadyForLobby.Count, _peers.Count);
+            playerId, _playersReadyForLobby.Count, _peers.Count);
 
         var hostId = GetHostPlayerId();
-        if (entry.Key == hostId)
+        if (playerId == hostId)
         {
             ResetMatchToLobby();
             return;
@@ -664,8 +686,7 @@ public sealed class GameLoop : INetEventListener, IDisposable
     private void HandleLobbyStateRequest(NetPeer peer, BinaryReader reader)
     {
         _ = reader;
-        var entry = _peers.FirstOrDefault(kv => kv.Value == peer);
-        if (entry.Value is null)
+        if (!_peerPlayerIds.ContainsKey(peer))
             return;
 
         // Renvoie un état lobby à jour au client demandeur.
@@ -797,10 +818,18 @@ public sealed class GameLoop : INetEventListener, IDisposable
         BroadcastLobbyState();
         _logger.LogInformation("Session réinitialisée, retour au lobby");
     }
-    private IEnumerable<Asteroid> SelectAsteroidsForSnapshot()
+    private IEnumerable<Asteroid> SelectAsteroidsForSnapshot(int recipientPlayerId)
     {
         if (_asteroids.Count <= SnapshotAsteroidLimit)
             return _asteroids.Values;
+
+        if (_ships.TryGetValue(recipientPlayerId, out var recipientShip) && recipientShip.IsAlive)
+        {
+            return _asteroids.Values
+                .OrderBy(asteroid => SquaredWrappedDistance(asteroid.Position, recipientShip.Position))
+                .Take(SnapshotAsteroidLimit)
+                .ToArray();
+        }
 
         var aliveShips = _ships.Values.Where(ship => ship.IsAlive).ToArray();
         if (aliveShips.Length == 0)
@@ -812,10 +841,18 @@ public sealed class GameLoop : INetEventListener, IDisposable
             .ToArray();
     }
 
-    private IEnumerable<Projectile> SelectProjectilesForSnapshot()
+    private IEnumerable<Projectile> SelectProjectilesForSnapshot(int recipientPlayerId)
     {
         if (_projectiles.Count <= SnapshotProjectileLimit)
             return _projectiles.Values;
+
+        if (_ships.TryGetValue(recipientPlayerId, out var recipientShip) && recipientShip.IsAlive)
+        {
+            return _projectiles.Values
+                .OrderBy(projectile => SquaredWrappedDistance(projectile.Position, recipientShip.Position))
+                .Take(SnapshotProjectileLimit)
+                .ToArray();
+        }
 
         var aliveShips = _ships.Values.Where(ship => ship.IsAlive).ToArray();
         if (aliveShips.Length == 0)

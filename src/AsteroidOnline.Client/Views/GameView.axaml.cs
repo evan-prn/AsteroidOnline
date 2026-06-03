@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.VisualTree;
+using AsteroidOnline.Client.Rendering;
 using AsteroidOnline.Client.ViewModels;
 
 namespace AsteroidOnline.Client.Views;
@@ -25,7 +26,7 @@ public partial class GameView : UserControl
         if (DataContext is not GameViewModel vm) return;
 
         var topLevel  = TopLevel.GetTopLevel(this);
-        var canvas    = this.FindControl<Canvas>("GameCanvas");
+        var canvas    = this.FindControl<GameCanvasControl>("GameCanvas");
 
         if (topLevel is not null && canvas is not null)
             vm.Attach(topLevel, canvas);

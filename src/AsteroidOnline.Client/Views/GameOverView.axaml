@@ -34,6 +34,48 @@
                    HorizontalAlignment="Center"
                    Margin="0,4,0,0" />
 
+        <Border CornerRadius="8"
+                Background="#8A07101D"
+                BorderBrush="#446BC7FF"
+                BorderThickness="1"
+                Padding="12"
+                Margin="0,6,0,0">
+          <StackPanel Spacing="8">
+            <TextBlock Text="CLASSEMENT FINAL"
+                       FontSize="14"
+                       FontWeight="Bold"
+                       Foreground="#FFCD72"
+                       HorizontalAlignment="Center"
+                       LetterSpacing="1.6" />
+            <ItemsControl ItemsSource="{Binding FinalRanking}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:FinalRankingEntry">
+                  <Grid ColumnDefinitions="42,*,92,92" Margin="0,2">
+                    <TextBlock Grid.Column="0"
+                               Text="{Binding Rank, StringFormat=# {0}}"
+                               Foreground="#8BD7FF"
+                               FontSize="12" />
+                    <TextBlock Grid.Column="1"
+                               Text="{Binding PlayerName}"
+                               Foreground="#EEF6FF"
+                               FontSize="12" />
+                    <TextBlock Grid.Column="2"
+                               Text="{Binding Score, StringFormat={}{0} pts}"
+                               Foreground="#FFD47B"
+                               FontSize="12"
+                               HorizontalAlignment="Right" />
+                    <TextBlock Grid.Column="3"
+                               Text="{Binding StatusText}"
+                               Foreground="#8FE6A2"
+                               FontSize="12"
+                               HorizontalAlignment="Right" />
+                  </Grid>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </Border>
+
         <Button Content="RETOUR AU LOBBY"
                 Command="{Binding ReturnToLobbyCommand}"
                 HorizontalAlignment="Stretch"

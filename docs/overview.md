@@ -11,6 +11,9 @@ Cette passe corrige les limitations restantes du rendu et du cycle de partie, sa
 - Réduction de l'effet de rollback visuel grâce à une interpolation compatible avec le wrap-around.
 - Affichage du pseudo au-dessus de chaque vaisseau pour l'identification en coop.
 - Snapshot réseau compacté pour éviter les freezes liés aux paquets UDP trop gros.
+- Optimisations FPS/latence documentées dans `performance-optimization.md`.
+- Guide des points d'entrée du code ajouté dans `code-modification-guide.md`.
+- Changelog fonctionnel maintenu dans `changelog.md`.
 - Ajout de feedback audio distinct pour les tirs et explosions d'astéroïdes.
 - Normalisation UTF-8 de la documentation mise à jour.
 

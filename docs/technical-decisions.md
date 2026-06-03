@@ -73,3 +73,30 @@ Retrait du rendu `DrawBackdropGrid`.
 
 ### Pourquoi
 C'était un overlay parasite permanent, non aligné avec la lisibilité demandée.
+
+## 7. Optimisations FPS / latence
+
+### Décision
+Les optimisations appliquées restent ciblées sur les chemins chauds :
+- interpolation client réutilisable dans `GameViewModel`;
+- rendu gameplay direct via `GameCanvasControl.Render(DrawingContext)`;
+- boucle client cadencée par `TopLevel.RequestAnimationFrame`;
+- buffers serveur réutilisés dans `GameLoop`;
+- lookup réseau `NetPeer -> playerId`;
+- préchargement des SFX dans `SystemGameAudioService`;
+- bornage réel des astéroïdes envoyés en snapshot par joueur.
+
+### Pourquoi
+Ces zones étaient exécutées à 60 Hz, à chaque input réseau ou à chaque tir.
+Réduire les allocations et l'I/O dans ces chemins stabilise le framerate sans
+changer les règles de jeu ni la physique.
+
+Le passage de `DispatcherTimer` à `RequestAnimationFrame` corrige le cas où un
+timer demandé à 16 ms dérive vers environ 24 ms effectifs, ce qui explique un
+plafond observé autour de 41 FPS même en Release.
+
+Le serveur simule toujours tous les astéroïdes actifs, mais chaque client reçoit
+une sélection proche de sa caméra pour réduire rendu, désérialisation et taille
+des paquets.
+
+Voir aussi `docs/performance-optimization.md`.

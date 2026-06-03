@@ -53,9 +53,9 @@ public sealed class PlayerSession
             : $"Joueur{playerId}";
     }
 
-    /// <summary>Snapshot immutable de la table des pseudos pour le renderer.</summary>
+    /// <summary>Vue lecture seule de la table des pseudos pour le renderer.</summary>
     public IReadOnlyDictionary<int, string> GetRosterSnapshot()
-        => new Dictionary<int, string>(_playerNames);
+        => _playerNames;
 
     /// <summary>Assure que le joueur local existe dans le roster.</summary>
     public void EnsureLocalPlayerRegistered()

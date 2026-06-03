@@ -9,6 +9,66 @@
              x:DataType="vm:ConnectViewModel"
              Background="#070A12">
 
+  <UserControl.Resources>
+    <SolidColorBrush x:Key="TextControlBackground" Color="White" />
+    <SolidColorBrush x:Key="TextControlBackgroundPointerOver" Color="White" />
+    <SolidColorBrush x:Key="TextControlBackgroundFocused" Color="White" />
+    <SolidColorBrush x:Key="TextControlForeground" Color="Black" />
+    <SolidColorBrush x:Key="TextControlForegroundPointerOver" Color="Black" />
+    <SolidColorBrush x:Key="TextControlForegroundFocused" Color="Black" />
+    <SolidColorBrush x:Key="TextControlBorderBrush" Color="#202020" />
+    <SolidColorBrush x:Key="TextControlBorderBrushPointerOver" Color="#202020" />
+    <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="#202020" />
+    <SolidColorBrush x:Key="TextControlPlaceholderForeground" Color="#666666" />
+    <SolidColorBrush x:Key="TextControlPlaceholderForegroundPointerOver" Color="#666666" />
+    <SolidColorBrush x:Key="TextControlPlaceholderForegroundFocused" Color="#666666" />
+    <SolidColorBrush x:Key="TextControlSelectionHighlightColor" Color="#0067C0" />
+  </UserControl.Resources>
+
+  <UserControl.Styles>
+    <Style Selector="TextBox.PlainInput">
+      <Setter Property="Background" Value="White" />
+      <Setter Property="Foreground" Value="Black" />
+      <Setter Property="CaretBrush" Value="Black" />
+      <Setter Property="SelectionBrush" Value="#0067C0" />
+      <Setter Property="SelectionForegroundBrush" Value="White" />
+      <Setter Property="BorderBrush" Value="#202020" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="4" />
+      <Setter Property="Padding" Value="10,8" />
+      <Setter Property="FontFamily" Value="Consolas, Courier New" />
+      <Setter Property="FontSize" Value="14" />
+    </Style>
+    <Style Selector="TextBox.PlainInput:pointerover">
+      <Setter Property="Background" Value="White" />
+      <Setter Property="Foreground" Value="Black" />
+      <Setter Property="CaretBrush" Value="Black" />
+      <Setter Property="SelectionBrush" Value="#0067C0" />
+      <Setter Property="SelectionForegroundBrush" Value="White" />
+      <Setter Property="BorderBrush" Value="#202020" />
+    </Style>
+    <Style Selector="TextBox.PlainInput:focus">
+      <Setter Property="Background" Value="White" />
+      <Setter Property="Foreground" Value="Black" />
+      <Setter Property="CaretBrush" Value="Black" />
+      <Setter Property="SelectionBrush" Value="#0067C0" />
+      <Setter Property="SelectionForegroundBrush" Value="White" />
+      <Setter Property="BorderBrush" Value="#202020" />
+    </Style>
+    <Style Selector="TextBox.PlainInput /template/ Border">
+      <Setter Property="Background" Value="White" />
+      <Setter Property="BorderBrush" Value="#202020" />
+    </Style>
+    <Style Selector="TextBox.PlainInput:pointerover /template/ Border">
+      <Setter Property="Background" Value="White" />
+      <Setter Property="BorderBrush" Value="#202020" />
+    </Style>
+    <Style Selector="TextBox.PlainInput:focus /template/ Border">
+      <Setter Property="Background" Value="White" />
+      <Setter Property="BorderBrush" Value="#202020" />
+    </Style>
+  </UserControl.Styles>
+
   <Grid>
     <Border Width="520"
             HorizontalAlignment="Center"
@@ -33,32 +93,20 @@
 
         <TextBlock Text="PSEUDO" Foreground="#91B5D4" FontSize="11" FontWeight="SemiBold" LetterSpacing="2" />
         <TextBox Text="{Binding Pseudo}"
+                 Classes="PlainInput"
                  Watermark="Votre pseudo (1-20 caractères)"
-                 MaxLength="20"
-                 Background="#101B2D"
-                 Foreground="#EEF6FF"
-                 BorderBrush="#2F5378"
-                 CornerRadius="6"
-                 Padding="10,8" />
+                 MaxLength="20" />
 
         <TextBlock Text="SERVEUR" Foreground="#91B5D4" FontSize="11" FontWeight="SemiBold" LetterSpacing="2" Margin="0,8,0,0" />
         <Grid ColumnDefinitions="*,8,95">
           <TextBox Grid.Column="0"
+                   Classes="PlainInput"
                    Text="{Binding ServerAddress}"
-                   Watermark="127.0.0.1"
-                   Background="#101B2D"
-                   Foreground="#EEF6FF"
-                   BorderBrush="#2F5378"
-                   CornerRadius="6"
-                   Padding="10,8" />
+                   Watermark="127.0.0.1" />
           <TextBox Grid.Column="2"
+                   Classes="PlainInput"
                    Text="{Binding ServerPort}"
-                   Watermark="7777"
-                   Background="#101B2D"
-                   Foreground="#EEF6FF"
-                   BorderBrush="#2F5378"
-                   CornerRadius="6"
-                   Padding="10,8" />
+                   Watermark="7777" />
         </Grid>
 
         <TextBlock Text="COULEUR DU VAISSEAU" Foreground="#91B5D4" FontSize="11" FontWeight="SemiBold" LetterSpacing="2" Margin="0,8,0,0" />

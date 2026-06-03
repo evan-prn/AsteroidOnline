@@ -66,6 +66,10 @@ public sealed class InputHandler : IDisposable
                 Dash          = _pressedKeys.Contains(Key.LeftShift)
                              || _pressedKeys.Contains(Key.RightShift)
                              || _pressedKeys.Contains(Key.E),
+                SpectateNext  = _pressedKeys.Contains(Key.Tab)
+                             || _pressedKeys.Contains(Key.PageDown),
+                SpectatePrevious = _pressedKeys.Contains(Key.R)
+                                  || _pressedKeys.Contains(Key.PageUp),
             };
         }
     }
@@ -87,6 +91,9 @@ public sealed class InputHandler : IDisposable
         {
             _pressedKeys.Add(e.Key);
         }
+
+        if (IsGameKey(e.Key))
+            e.Handled = true;
     }
 
     private void OnKeyUp(object? sender, KeyEventArgs e)
@@ -95,7 +102,18 @@ public sealed class InputHandler : IDisposable
         {
             _pressedKeys.Remove(e.Key);
         }
+
+        if (IsGameKey(e.Key))
+            e.Handled = true;
     }
+
+    private static bool IsGameKey(Key key) => key is
+        Key.W or Key.Z or Key.Up or
+        Key.A or Key.Q or Key.Left or
+        Key.D or Key.Right or
+        Key.Space or Key.F or
+        Key.LeftShift or Key.RightShift or Key.E or
+        Key.Tab or Key.R or Key.PageDown or Key.PageUp;
 
     /// <summary>Se désabonne des événements clavier à la destruction.</summary>
     public void Dispose()

@@ -1,10 +1,14 @@
 {
   "version": 2,
-  "dgSpecHash": "4LusSQM7wG4=",
+  "dgSpecHash": "76diC4Frhzo=",
   "success": true,
   "projectFilePath": "C:\\Users\\oui\\Asteroid\\AsteroidOnline\\src\\AsteroidOnline.Infrastructure\\AsteroidOnline.Infrastructure.csproj",
   "expectedPackageFiles": [
-    "C:\\Users\\oui\\.nuget\\packages\\litenetlib\\2.1.2\\litenetlib.2.1.2.nupkg.sha512"
+    "C:\\Users\\oui\\.nuget\\packages\\litenetlib\\2.1.2\\litenetlib.2.1.2.nupkg.sha512",
+    "C:\\Users\\oui\\.nuget\\packages\\microsoft.net.illink.tasks\\10.0.8\\microsoft.net.illink.tasks.10.0.8.nupkg.sha512",
+    "C:\\Users\\oui\\.nuget\\packages\\microsoft.netcore.app.runtime.win-x64\\10.0.8\\microsoft.netcore.app.runtime.win-x64.10.0.8.nupkg.sha512",
+    "C:\\Users\\oui\\.nuget\\packages\\microsoft.windowsdesktop.app.runtime.win-x64\\10.0.8\\microsoft.windowsdesktop.app.runtime.win-x64.10.0.8.nupkg.sha512",
+    "C:\\Users\\oui\\.nuget\\packages\\microsoft.aspnetcore.app.runtime.win-x64\\10.0.8\\microsoft.aspnetcore.app.runtime.win-x64.10.0.8.nupkg.sha512"
   ],
   "logs": []
 }

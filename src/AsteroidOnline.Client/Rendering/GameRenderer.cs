@@ -1,24 +1,23 @@
+namespace AsteroidOnline.Client.Rendering;
+
 using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.Globalization;
 using System.Numerics;
 using Avalonia;
-using Avalonia.Controls;
 using Avalonia.Media;
 using AsteroidOnline.Client.Services;
 using AsteroidOnline.Domain.Entities;
 using AsteroidOnline.Domain.World;
 using AsteroidOnline.Shared.Packets;
 
-namespace AsteroidOnline.Client.Rendering;
-
 /// <summary>
-/// Renderer client avec caméra centrée joueur + VFX légers.
-/// Conçu pour maintenir la lisibilité sur une map large et un lobby jusqu'à 20 joueurs.
+/// Renderer gameplay direct via DrawingContext.
+/// Evite la recreation de controles Avalonia a chaque frame.
 /// </summary>
 public sealed class GameRenderer
 {
-    private readonly Canvas _canvas;
+    private readonly GameCanvasControl _surface;
     private readonly IGameAudioService _audioService;
     private readonly Random _random = new();
     private readonly Dictionary<int, Vector2> _previousProjectilePositions = new();
@@ -27,215 +26,210 @@ public sealed class GameRenderer
     private readonly List<TransientVfx> _vfx = new();
     private long _lastProcessedEventTimestamp = -1;
 
+    private GameStateSnapshotPacket? _snapshot;
+    private IReadOnlyDictionary<int, string> _playerNames = new Dictionary<int, string>();
+    private int _localPlayerId;
+    private int _cameraPlayerId;
     private float _shakeTimeRemaining;
     private float _shakeIntensity;
 
     private const float VisibleWorldWidth = 1600f;
     private const float VisibleWorldHeight = 900f;
+    private const int MaxTransientVfx = 48;
 
-    private static readonly IReadOnlyDictionary<PlayerColor, ISolidColorBrush> ShipBrushes =
-        new Dictionary<PlayerColor, ISolidColorBrush>
+    private static readonly Typeface LabelTypeface = new("Cascadia Mono");
+    private static readonly IBrush WhiteBrush = Brushes.White;
+    private static readonly IBrush TransparentBrush = Brushes.Transparent;
+    private static readonly IBrush ProjectileBrush = new SolidColorBrush(Color.Parse("#FFF385"));
+    private static readonly IBrush RadarAsteroidBrush = new SolidColorBrush(Color.Parse("#FFAE6B"));
+    private static readonly IBrush RadarLocalPlayerBrush = new SolidColorBrush(Color.Parse("#7BFF7E"));
+    private static readonly IBrush RadarRemotePlayerBrush = new SolidColorBrush(Color.Parse("#E9F2FF"));
+    private static readonly Pen ProjectileGlowPen = new(new SolidColorBrush(Color.FromArgb(120, 255, 255, 255)), 0.8);
+    private static readonly Pen ProjectileTrailPen = new(new SolidColorBrush(Color.FromArgb(150, 255, 243, 133)), 1.4);
+    private static readonly Pen AsteroidPen = new(new SolidColorBrush(Color.FromArgb(180, 255, 222, 180)), 1.2);
+    private static readonly Pen RadarFramePen = new(new SolidColorBrush(Color.FromArgb(180, 255, 199, 109)), 1.2);
+    private static readonly IBrush RadarBackgroundBrush = new SolidColorBrush(Color.FromArgb(95, 8, 13, 25));
+    private static readonly IReadOnlyDictionary<PlayerColor, Color> ShipColors =
+        new Dictionary<PlayerColor, Color>
         {
-            { PlayerColor.Rouge,  new SolidColorBrush(Color.Parse("#FF5B4A")) },
-            { PlayerColor.Bleu,   new SolidColorBrush(Color.Parse("#4AA7FF")) },
-            { PlayerColor.Vert,   new SolidColorBrush(Color.Parse("#52FFAA")) },
-            { PlayerColor.Jaune,  new SolidColorBrush(Color.Parse("#FFD84A")) },
-            { PlayerColor.Violet, new SolidColorBrush(Color.Parse("#C06CFF")) },
-            { PlayerColor.Orange, new SolidColorBrush(Color.Parse("#FF9C4A")) },
+            { PlayerColor.Rouge,  Color.Parse("#FF5B4A") },
+            { PlayerColor.Bleu,   Color.Parse("#4AA7FF") },
+            { PlayerColor.Vert,   Color.Parse("#52FFAA") },
+            { PlayerColor.Jaune,  Color.Parse("#FFD84A") },
+            { PlayerColor.Violet, Color.Parse("#C06CFF") },
+            { PlayerColor.Orange, Color.Parse("#FF9C4A") },
         };
 
-    public GameRenderer(Canvas canvas, IGameAudioService audioService)
+    public GameRenderer(GameCanvasControl surface, IGameAudioService audioService)
     {
-        _canvas = canvas;
+        _surface = surface;
         _audioService = audioService;
+        _surface.AttachRenderer(this);
     }
 
     public void Render(
         GameStateSnapshotPacket snapshot,
         int localPlayerId,
+        int cameraPlayerId,
         IReadOnlyDictionary<int, string> playerNames)
     {
-        _canvas.Children.Clear();
-        if (_canvas.Bounds.Width <= 0 || _canvas.Bounds.Height <= 0)
-            return;
+        _snapshot = snapshot;
+        _localPlayerId = localPlayerId;
+        _cameraPlayerId = cameraPlayerId;
+        _playerNames = playerNames;
 
-        // Les événements (VFX/audio) ne doivent être calculés qu'à la réception d'un
-        // nouveau snapshot réseau, pas à chaque frame interpolée.
         if (snapshot.ServerTimestamp != _lastProcessedEventTimestamp)
         {
             UpdateTransientVfx(snapshot, localPlayerId);
             _lastProcessedEventTimestamp = snapshot.ServerTimestamp;
         }
 
+        TickVfx(1f / 60f);
+        _surface.InvalidateVisual();
+    }
+
+    public void RenderFrame(DrawingContext context, Size surfaceSize)
+    {
+        if (_snapshot is null || surfaceSize.Width <= 0 || surfaceSize.Height <= 0)
+            return;
+
         var bounds = WorldBounds.Default;
-        var localShip = snapshot.Players.FirstOrDefault(p => p.Id == localPlayerId && p.IsAlive);
-        var cameraPos = localShip is null
+        var cameraShip = FindAlivePlayer(_snapshot, _cameraPlayerId);
+        var cameraPos = cameraShip is null
             ? new Vector2(bounds.Width / 2f, bounds.Height / 2f)
-            : new Vector2(localShip.X, localShip.Y);
+            : new Vector2(cameraShip.X, cameraShip.Y);
 
-        var scale = Math.Min(
-            _canvas.Bounds.Width / VisibleWorldWidth,
-            _canvas.Bounds.Height / VisibleWorldHeight);
-
+        var scale = Math.Min(surfaceSize.Width / VisibleWorldWidth, surfaceSize.Height / VisibleWorldHeight);
         var shake = GetCameraShakeOffset();
-        var screenCenter = new Point(
-            (_canvas.Bounds.Width / 2.0) + shake.X,
-            (_canvas.Bounds.Height / 2.0) + shake.Y);
+        var screenCenter = new Point((surfaceSize.Width / 2.0) + shake.X, (surfaceSize.Height / 2.0) + shake.Y);
 
-        foreach (var asteroid in snapshot.Asteroids)
-            DrawAsteroid(asteroid, cameraPos, scale, screenCenter, bounds);
+        foreach (var asteroid in _snapshot.Asteroids)
+            DrawAsteroid(context, asteroid, cameraPos, scale, screenCenter, bounds, surfaceSize);
 
-        foreach (var projectile in snapshot.Projectiles)
-            DrawProjectile(projectile, cameraPos, scale, screenCenter, bounds);
+        foreach (var projectile in _snapshot.Projectiles)
+            DrawProjectile(context, projectile, cameraPos, scale, screenCenter, bounds, surfaceSize);
 
-        foreach (var ship in snapshot.Players)
+        foreach (var ship in _snapshot.Players)
             DrawShip(
+                context,
                 ship,
                 cameraPos,
                 scale,
                 screenCenter,
                 bounds,
-                ship.Id == localPlayerId,
-                ResolvePlayerName(playerNames, ship.Id));
+                surfaceSize,
+                ship.Id == _localPlayerId,
+                ship.Id == _cameraPlayerId);
 
-        DrawRadar(snapshot, localPlayerId);
-        DrawVfx(cameraPos, scale, screenCenter, bounds);
-        TickVfx(1f / 60f);
+        DrawRadar(context, _snapshot, _localPlayerId, surfaceSize);
+        DrawVfx(context, cameraPos, scale, screenCenter, bounds, surfaceSize);
     }
 
-    private void DrawShip(PlayerSnapshot ship, Vector2 cameraPos, double scale,
-        Point screenCenter, in WorldBounds bounds, bool isLocal, string playerName)
+    private void DrawShip(DrawingContext context, PlayerSnapshot ship, Vector2 cameraPos, double scale,
+        Point screenCenter, in WorldBounds bounds, Size surfaceSize, bool isLocal, bool isCameraTarget)
     {
         if (!ship.IsAlive)
             return;
 
         var center = ToScreen(new Vector2(ship.X, ship.Y), cameraPos, scale, screenCenter, bounds);
         var size = 16.0 * scale;
-        if (!IsOnScreen(center, size * 3))
+        if (!IsOnScreen(center, size * 3, surfaceSize))
             return;
 
-        var points = new[]
-        {
-            Rotate(0, -size, ship.Rotation),
-            Rotate(-size * 0.7, size * 0.8, ship.Rotation),
-            Rotate(size * 0.7, size * 0.8, ship.Rotation),
-        };
-
-        var baseBrush = ShipBrushes.TryGetValue(ship.Color, out var b) ? b : Brushes.White;
+        var nose = Rotate(0, -size, ship.Rotation);
+        var leftWing = Rotate(-size * 0.7, size * 0.8, ship.Rotation);
+        var rightWing = Rotate(size * 0.7, size * 0.8, ship.Rotation);
+        var fillColor = ShipColors.TryGetValue(ship.Color, out var c) ? c : Colors.White;
         var blinkFactor = ship.IsInvulnerable
             ? (Math.Sin(Environment.TickCount64 / 80.0) * 0.5) + 0.5
             : 1.0;
-        var fillColor = (baseBrush as SolidColorBrush)?.Color ?? Colors.White;
         var alpha = (byte)(ship.IsInvulnerable ? 110 + (blinkFactor * 145) : 255);
+        var shipBrush = new SolidColorBrush(Color.FromArgb(alpha, fillColor.R, fillColor.G, fillColor.B));
+        var stroke = isLocal
+            ? new Pen(WhiteBrush, 1.8)
+            : new Pen(new SolidColorBrush(Color.FromArgb(170, 234, 243, 255)), 1.0);
 
-        var polygon = new Avalonia.Controls.Shapes.Polygon
+        DrawPolygon(context, shipBrush, stroke, stackalloc Point[]
         {
-            Points = new Avalonia.Collections.AvaloniaList<Point>
-            {
-                new(center.X + points[0].X, center.Y + points[0].Y),
-                new(center.X + points[1].X, center.Y + points[1].Y),
-                new(center.X + points[2].X, center.Y + points[2].Y),
-            },
-            Fill = new SolidColorBrush(Color.FromArgb(alpha, fillColor.R, fillColor.G, fillColor.B)),
-            Stroke = isLocal ? Brushes.White : new SolidColorBrush(Color.Parse("#AAEAF3FF")),
-            StrokeThickness = isLocal ? 1.8 : 1.0,
-        };
-        _canvas.Children.Add(polygon);
+            new(center.X + nose.X, center.Y + nose.Y),
+            new(center.X + leftWing.X, center.Y + leftWing.Y),
+            new(center.X + rightWing.X, center.Y + rightWing.Y),
+        });
 
         if (ship.IsInvulnerable)
         {
             var pulse = 1.15 + (blinkFactor * 0.5);
             var haloRadius = size * pulse * 1.4;
-            var halo = new Avalonia.Controls.Shapes.Ellipse
-            {
-                Width = haloRadius * 2,
-                Height = haloRadius * 2,
-                StrokeThickness = 1.4,
-                Stroke = new SolidColorBrush(Color.FromArgb(130, 255, 247, 116)),
-                Fill = Brushes.Transparent,
-            };
-            Canvas.SetLeft(halo, center.X - haloRadius);
-            Canvas.SetTop(halo, center.Y - haloRadius);
-            _canvas.Children.Add(halo);
+            context.DrawEllipse(
+                TransparentBrush,
+                new Pen(new SolidColorBrush(Color.FromArgb(130, 255, 247, 116)), 1.4),
+                center,
+                haloRadius,
+                haloRadius);
         }
 
-        if (isLocal)
+        if (isLocal || isCameraTarget)
         {
-            var localRing = new Avalonia.Controls.Shapes.Ellipse
-            {
-                Width = size * 3.1,
-                Height = size * 3.1,
-                Stroke = new SolidColorBrush(Color.FromArgb(80, 255, 255, 255)),
-                StrokeThickness = 1.0,
-                Fill = Brushes.Transparent,
-            };
-            Canvas.SetLeft(localRing, center.X - (size * 1.55));
-            Canvas.SetTop(localRing, center.Y - (size * 1.55));
-            _canvas.Children.Add(localRing);
+            var radius = size * 1.55;
+            context.DrawEllipse(
+                TransparentBrush,
+                new Pen(new SolidColorBrush(isLocal
+                    ? Color.FromArgb(80, 255, 255, 255)
+                    : Color.FromArgb(120, 255, 199, 109)), 1.0),
+                center,
+                radius,
+                radius);
         }
 
         var speed = MathF.Sqrt((ship.VelocityX * ship.VelocityX) + (ship.VelocityY * ship.VelocityY));
         if (speed > 60f)
-            DrawEngineTrail(center, ship.Rotation, size, scale);
+            DrawEngineTrail(context, center, ship.Rotation, size, scale);
 
-        DrawPlayerName(center, size, playerName, isLocal, ship.Color);
+        DrawPlayerName(context, center, size, ResolvePlayerName(_playerNames, ship.Id), isLocal, ship.Color);
     }
 
-    private void DrawPlayerName(Point center, double shipSize, string playerName, bool isLocal, PlayerColor color)
+    private void DrawPlayerName(DrawingContext context, Point center, double shipSize, string playerName, bool isLocal, PlayerColor color)
     {
         if (string.IsNullOrWhiteSpace(playerName))
             return;
 
-        var accent = ShipBrushes.TryGetValue(color, out var brush)
-            ? ((SolidColorBrush)brush).Color
-            : Colors.White;
+        var accent = ShipColors.TryGetValue(color, out var c) ? c : Colors.White;
+        var text = CreateText(playerName, isLocal ? 12 : 11, WhiteBrush);
+        var width = text.Width + 12;
+        var height = text.Height + 4;
+        var left = center.X - (width / 2);
+        var top = center.Y - (shipSize * 2.2) - height;
+        var rect = new Rect(left, top, width, height);
 
-        var label = new Border
-        {
-            Background = new SolidColorBrush(Color.FromArgb(isLocal ? (byte)190 : (byte)150, 7, 10, 18)),
-            BorderBrush = new SolidColorBrush(Color.FromArgb(150, accent.R, accent.G, accent.B)),
-            BorderThickness = new Thickness(1),
-            CornerRadius = new CornerRadius(6),
-            Padding = new Thickness(6, 2),
-            Child = new TextBlock
-            {
-                Text = playerName,
-                FontSize = isLocal ? 12 : 11,
-                FontWeight = isLocal ? FontWeight.SemiBold : FontWeight.Medium,
-                Foreground = Brushes.White,
-            },
-        };
-
-        label.Measure(Size.Infinity);
-        Canvas.SetLeft(label, center.X - (label.DesiredSize.Width / 2));
-        Canvas.SetTop(label, center.Y - (shipSize * 2.2) - label.DesiredSize.Height);
-        _canvas.Children.Add(label);
+        context.DrawRectangle(
+            new SolidColorBrush(Color.FromArgb(isLocal ? (byte)190 : (byte)150, 7, 10, 18)),
+            new Pen(new SolidColorBrush(Color.FromArgb(150, accent.R, accent.G, accent.B)), 1),
+            rect,
+            6,
+            6);
+        context.DrawText(text, new Point(left + 6, top + 2));
     }
 
-    private void DrawEngineTrail(Point center, float rotation, double shipSize, double scale)
+    private void DrawEngineTrail(DrawingContext context, Point center, float rotation, double shipSize, double scale)
     {
-        var basePoint = Rotate(0, shipSize * 0.9, rotation);
         var left = Rotate(-shipSize * 0.28, shipSize * 1.1, rotation);
         var right = Rotate(shipSize * 0.28, shipSize * 1.1, rotation);
         var tail = Rotate(0, shipSize * (1.6 + (_random.NextDouble() * 0.35)), rotation);
 
-        var flame = new Avalonia.Controls.Shapes.Polygon
-        {
-            Points = new Avalonia.Collections.AvaloniaList<Point>
+        DrawPolygon(
+            context,
+            new SolidColorBrush(Color.FromArgb(200, 255, 151, 64)),
+            new Pen(new SolidColorBrush(Color.FromArgb(100, 255, 230, 140)), Math.Max(1.0, scale)),
+            stackalloc Point[]
             {
                 new(center.X + left.X, center.Y + left.Y),
                 new(center.X + tail.X, center.Y + tail.Y),
                 new(center.X + right.X, center.Y + right.Y),
-            },
-            Fill = new SolidColorBrush(Color.FromArgb(200, 255, 151, 64)),
-            Stroke = new SolidColorBrush(Color.FromArgb(100, 255, 230, 140)),
-            StrokeThickness = Math.Max(1.0, scale * 1.0),
-        };
-        _canvas.Children.Add(flame);
+            });
     }
 
-    private void DrawAsteroid(AsteroidSnapshot asteroid, Vector2 cameraPos, double scale,
-        Point screenCenter, in WorldBounds bounds)
+    private void DrawAsteroid(DrawingContext context, AsteroidSnapshot asteroid, Vector2 cameraPos, double scale,
+        Point screenCenter, in WorldBounds bounds, Size surfaceSize)
     {
         var center = ToScreen(new Vector2(asteroid.X, asteroid.Y), cameraPos, scale, screenCenter, bounds);
         var radius = asteroid.Size switch
@@ -245,7 +239,7 @@ public sealed class GameRenderer
             _ => 14.0 * scale,
         };
 
-        if (!IsOnScreen(center, radius * 2.2))
+        if (!IsOnScreen(center, radius * 2.2, surfaceSize))
             return;
 
         var baseColor = asteroid.Size switch
@@ -255,119 +249,66 @@ public sealed class GameRenderer
             _ => Color.Parse("#6E5338"),
         };
 
-        var points = new Avalonia.Collections.AvaloniaList<Point>();
-        const int sides = 8;
-        for (var i = 0; i < sides; i++)
+        Span<Point> points = stackalloc Point[8];
+        for (var i = 0; i < points.Length; i++)
         {
-            var angle = asteroid.Rotation + (i * Math.PI * 2 / sides);
+            var angle = asteroid.Rotation + (i * Math.PI * 2 / points.Length);
             var jagged = radius * (0.78 + (0.24 * Math.Abs(Math.Sin(i * asteroid.Id * 1.17))));
-            points.Add(new Point(
+            points[i] = new Point(
                 center.X + (Math.Cos(angle) * jagged),
-                center.Y + (Math.Sin(angle) * jagged)));
+                center.Y + (Math.Sin(angle) * jagged));
         }
 
-        var poly = new Avalonia.Controls.Shapes.Polygon
-        {
-            Points = points,
-            Fill = new SolidColorBrush(baseColor),
-            Stroke = new SolidColorBrush(Color.FromArgb(180, 255, 222, 180)),
-            StrokeThickness = 1.2,
-        };
-        _canvas.Children.Add(poly);
+        DrawPolygon(context, new SolidColorBrush(baseColor), AsteroidPen, points);
     }
 
-    private void DrawProjectile(ProjectileSnapshot projectile, Vector2 cameraPos, double scale,
-        Point screenCenter, in WorldBounds bounds)
+    private void DrawProjectile(DrawingContext context, ProjectileSnapshot projectile, Vector2 cameraPos, double scale,
+        Point screenCenter, in WorldBounds bounds, Size surfaceSize)
     {
         var pos = new Vector2(projectile.X, projectile.Y);
         var center = ToScreen(pos, cameraPos, scale, screenCenter, bounds);
         var radius = 3.6 * scale;
-        if (!IsOnScreen(center, radius * 2.4))
+        if (!IsOnScreen(center, radius * 2.4, surfaceSize))
             return;
 
         if (_previousProjectilePositions.TryGetValue(projectile.Id, out var prev))
         {
             var trailStart = ToScreen(prev, cameraPos, scale, screenCenter, bounds);
-            var line = new Avalonia.Controls.Shapes.Line
-            {
-                StartPoint = trailStart,
-                EndPoint = center,
-                Stroke = new SolidColorBrush(Color.FromArgb(150, 255, 243, 133)),
-                StrokeThickness = Math.Max(1.0, scale * 1.4),
-            };
-            _canvas.Children.Add(line);
+            context.DrawLine(ProjectileTrailPen, trailStart, center);
         }
 
-        var bullet = new Avalonia.Controls.Shapes.Ellipse
-        {
-            Width = radius * 2,
-            Height = radius * 2,
-            Fill = new SolidColorBrush(Color.Parse("#FFF385")),
-            Stroke = new SolidColorBrush(Color.FromArgb(120, 255, 255, 255)),
-            StrokeThickness = 0.8,
-        };
-        Canvas.SetLeft(bullet, center.X - radius);
-        Canvas.SetTop(bullet, center.Y - radius);
-        _canvas.Children.Add(bullet);
+        context.DrawEllipse(ProjectileBrush, ProjectileGlowPen, center, radius, radius);
     }
 
-    private void DrawRadar(GameStateSnapshotPacket snapshot, int localPlayerId)
+    private void DrawRadar(DrawingContext context, GameStateSnapshotPacket snapshot, int localPlayerId, Size surfaceSize)
     {
         const double radarSize = 130;
         const double padding = 16;
-        var left = _canvas.Bounds.Width - radarSize - padding;
-        var top = _canvas.Bounds.Height - radarSize - padding;
+        var left = surfaceSize.Width - radarSize - padding;
+        var top = surfaceSize.Height - radarSize - padding;
+        var radarRect = new Rect(left, top, radarSize, radarSize);
 
-        var frame = new Border
-        {
-            Width = radarSize,
-            Height = radarSize,
-            CornerRadius = new CornerRadius(999),
-            BorderBrush = new SolidColorBrush(Color.FromArgb(180, 255, 199, 109)),
-            BorderThickness = new Thickness(1.2),
-            Background = new SolidColorBrush(Color.FromArgb(95, 8, 13, 25)),
-        };
-        Canvas.SetLeft(frame, left);
-        Canvas.SetTop(frame, top);
-        _canvas.Children.Add(frame);
+        context.DrawRectangle(RadarBackgroundBrush, RadarFramePen, radarRect, 65, 65);
 
         foreach (var asteroid in snapshot.Asteroids)
         {
             var p = ToRadarPoint(asteroid.X, asteroid.Y, left, top, radarSize);
-            AddRadarDot(p, 3.2, Color.Parse("#FFAE6B"));
+            context.DrawEllipse(RadarAsteroidBrush, null, p, 1.6, 1.6);
         }
 
-        foreach (var player in snapshot.Players.Where(p => p.IsAlive))
+        foreach (var player in snapshot.Players)
         {
+            if (!player.IsAlive)
+                continue;
+
             var p = ToRadarPoint(player.X, player.Y, left, top, radarSize);
-            var color = player.Id == localPlayerId
-                ? Color.Parse("#7BFF7E")
-                : Color.Parse("#E9F2FF");
-            AddRadarDot(p, player.Id == localPlayerId ? 3.8 : 2.8, color);
+            var brush = player.Id == localPlayerId ? RadarLocalPlayerBrush : RadarRemotePlayerBrush;
+            var dotSize = player.Id == localPlayerId ? 1.9 : 1.4;
+            context.DrawEllipse(brush, null, p, dotSize, dotSize);
         }
     }
 
-    private Point ToRadarPoint(float worldX, float worldY, double left, double top, double size)
-    {
-        var nx = worldX / WorldBounds.Default.Width;
-        var ny = worldY / WorldBounds.Default.Height;
-        return new Point(left + (nx * size), top + (ny * size));
-    }
-
-    private void AddRadarDot(Point p, double size, Color color)
-    {
-        var dot = new Avalonia.Controls.Shapes.Ellipse
-        {
-            Width = size,
-            Height = size,
-            Fill = new SolidColorBrush(color),
-        };
-        Canvas.SetLeft(dot, p.X - (size / 2));
-        Canvas.SetTop(dot, p.Y - (size / 2));
-        _canvas.Children.Add(dot);
-    }
-
-    private void DrawVfx(Vector2 cameraPos, double scale, Point screenCenter, in WorldBounds bounds)
+    private void DrawVfx(DrawingContext context, Vector2 cameraPos, double scale, Point screenCenter, in WorldBounds bounds, Size surfaceSize)
     {
         foreach (var vfx in _vfx)
         {
@@ -376,56 +317,41 @@ public sealed class GameRenderer
             var radius = vfx.RadiusStart + ((vfx.RadiusEnd - vfx.RadiusStart) * t);
             var alpha = (byte)(vfx.BaseColor.A * (1f - t));
 
-            if (!IsOnScreen(center, radius * scale * 3))
+            if (!IsOnScreen(center, radius * scale * 3, surfaceSize))
                 continue;
 
-            var circle = new Avalonia.Controls.Shapes.Ellipse
-            {
-                Width = radius * 2 * scale,
-                Height = radius * 2 * scale,
-                Fill = new SolidColorBrush(Color.FromArgb(alpha, vfx.BaseColor.R, vfx.BaseColor.G, vfx.BaseColor.B)),
-                Stroke = new SolidColorBrush(Color.FromArgb((byte)Math.Min(255, alpha + 35), 255, 255, 255)),
-                StrokeThickness = 1.0,
-            };
-            Canvas.SetLeft(circle, center.X - (circle.Width / 2));
-            Canvas.SetTop(circle, center.Y - (circle.Height / 2));
-            _canvas.Children.Add(circle);
+            var scaledRadius = radius * scale;
+            context.DrawEllipse(
+                new SolidColorBrush(Color.FromArgb(alpha, vfx.BaseColor.R, vfx.BaseColor.G, vfx.BaseColor.B)),
+                new Pen(new SolidColorBrush(Color.FromArgb((byte)Math.Min(255, alpha + 35), 255, 255, 255)), 1),
+                center,
+                scaledRadius,
+                scaledRadius);
         }
     }
 
     private void UpdateTransientVfx(GameStateSnapshotPacket snapshot, int localPlayerId)
     {
-        var previousProjectileIds = _previousProjectilePositions.Keys.ToHashSet();
-        var currentProjectilePositions = snapshot.Projectiles.ToDictionary(
-            p => p.Id,
-            p => new Vector2(p.X, p.Y));
-
         foreach (var previous in _previousProjectilePositions)
         {
-            if (!currentProjectilePositions.ContainsKey(previous.Key))
-            {
+            if (!ContainsProjectile(snapshot, previous.Key))
                 AddVfx(previous.Value, Color.FromArgb(200, 255, 215, 106), 0.20f, 6f, 28f);
-            }
         }
         _previousProjectilePositions.Clear();
-        foreach (var current in currentProjectilePositions)
-            _previousProjectilePositions[current.Key] = current.Value;
-
-        var currentAsteroidPositions = snapshot.Asteroids.ToDictionary(
-            a => a.Id,
-            a => new Vector2(a.X, a.Y));
+        foreach (var projectile in snapshot.Projectiles)
+            _previousProjectilePositions[projectile.Id] = new Vector2(projectile.X, projectile.Y);
 
         foreach (var previous in _previousAsteroidPositions)
         {
-            if (!currentAsteroidPositions.ContainsKey(previous.Key))
+            if (!ContainsAsteroid(snapshot, previous.Key))
             {
                 AddVfx(previous.Value, Color.FromArgb(220, 255, 125, 82), 0.35f, 16f, 80f);
                 _audioService.PlayAsteroidExplosion();
             }
         }
         _previousAsteroidPositions.Clear();
-        foreach (var current in currentAsteroidPositions)
-            _previousAsteroidPositions[current.Key] = current.Value;
+        foreach (var asteroid in snapshot.Asteroids)
+            _previousAsteroidPositions[asteroid.Id] = new Vector2(asteroid.X, asteroid.Y);
 
         foreach (var player in snapshot.Players)
         {
@@ -444,6 +370,9 @@ public sealed class GameRenderer
 
     private void AddVfx(Vector2 position, Color color, float duration, float radiusStart, float radiusEnd)
     {
+        if (_vfx.Count >= MaxTransientVfx)
+            _vfx.RemoveAt(0);
+
         _vfx.Add(new TransientVfx
         {
             Position = position,
@@ -495,13 +424,44 @@ public sealed class GameRenderer
             ((float)_random.NextDouble() * 2f - 1f) * amount);
     }
 
-    private Point ToScreen(Vector2 worldPos, Vector2 cameraPos, double scale, Point screenCenter,
+    private static void DrawPolygon(DrawingContext context, IBrush brush, Pen? pen, ReadOnlySpan<Point> points)
+    {
+        if (points.Length == 0)
+            return;
+
+        var geometry = new StreamGeometry();
+        using (var geometryContext = geometry.Open())
+        {
+            geometryContext.BeginFigure(points[0], true);
+            for (var i = 1; i < points.Length; i++)
+                geometryContext.LineTo(points[i]);
+            geometryContext.EndFigure(true);
+        }
+
+        context.DrawGeometry(brush, pen, geometry);
+    }
+
+    private static FormattedText CreateText(string text, double fontSize, IBrush brush)
+        => new(
+            text,
+            CultureInfo.CurrentCulture,
+            FlowDirection.LeftToRight,
+            LabelTypeface,
+            fontSize,
+            brush);
+
+    private static Point ToRadarPoint(float worldX, float worldY, double left, double top, double size)
+    {
+        var nx = worldX / WorldBounds.Default.Width;
+        var ny = worldY / WorldBounds.Default.Height;
+        return new Point(left + (nx * size), top + (ny * size));
+    }
+
+    private static Point ToScreen(Vector2 worldPos, Vector2 cameraPos, double scale, Point screenCenter,
         in WorldBounds bounds)
     {
         var delta = WrappedDelta(worldPos, cameraPos, bounds);
-        return new Point(
-            screenCenter.X + (delta.X * scale),
-            screenCenter.Y + (delta.Y * scale));
+        return new Point(screenCenter.X + (delta.X * scale), screenCenter.Y + (delta.Y * scale));
     }
 
     private static Vector2 WrappedDelta(Vector2 target, Vector2 origin, in WorldBounds bounds)
@@ -517,13 +477,11 @@ public sealed class GameRenderer
         return new Vector2(dx, dy);
     }
 
-    private bool IsOnScreen(Point p, double margin)
-    {
-        return p.X >= -margin
-               && p.Y >= -margin
-               && p.X <= _canvas.Bounds.Width + margin
-               && p.Y <= _canvas.Bounds.Height + margin;
-    }
+    private static bool IsOnScreen(Point p, double margin, Size surfaceSize)
+        => p.X >= -margin
+           && p.Y >= -margin
+           && p.X <= surfaceSize.Width + margin
+           && p.Y <= surfaceSize.Height + margin;
 
     private static (double X, double Y) Rotate(double x, double y, float angle)
     {
@@ -536,6 +494,39 @@ public sealed class GameRenderer
         => playerNames.TryGetValue(playerId, out var name) && !string.IsNullOrWhiteSpace(name)
             ? name
             : $"Joueur{playerId}";
+
+    private static PlayerSnapshot? FindAlivePlayer(GameStateSnapshotPacket snapshot, int playerId)
+    {
+        foreach (var player in snapshot.Players)
+        {
+            if (player.Id == playerId && player.IsAlive)
+                return player;
+        }
+
+        return null;
+    }
+
+    private static bool ContainsProjectile(GameStateSnapshotPacket snapshot, int projectileId)
+    {
+        foreach (var projectile in snapshot.Projectiles)
+        {
+            if (projectile.Id == projectileId)
+                return true;
+        }
+
+        return false;
+    }
+
+    private static bool ContainsAsteroid(GameStateSnapshotPacket snapshot, int asteroidId)
+    {
+        foreach (var asteroid in snapshot.Asteroids)
+        {
+            if (asteroid.Id == asteroidId)
+                return true;
+        }
+
+        return false;
+    }
 
     private struct TransientVfx
     {

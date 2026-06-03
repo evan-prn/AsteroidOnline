@@ -22,6 +22,20 @@ Le panneau de rappel des commandes était en bas à droite, sur la même zone qu
 - Le layout reste en bindings MVVM.
 - Les corrections sont localisées à la vue de jeu et au renderer, sans casser l'architecture existante.
 
+## Lisibilité des champs de connexion
+- Les champs pseudo, adresse serveur et port utilisent un fond blanc avec texte noir.
+- Les états normal, survol et focus conservent le même rendu.
+- La sélection texte reste visible avec une surbrillance bleue type Windows et texte blanc.
+- Les ressources internes du thème Fluent (`TextControlBackgroundFocused`,
+  `TextControlForegroundFocused`, etc.) sont redéfinies localement dans
+  `ConnectView.axaml`.
+
+### Justification UX
+Sur certains appareils ou thèmes système, le focus Avalonia pouvait rendre le champ
+très clair tout en conservant un texte trop pâle. Le contraste forcé évite cette
+perte de lisibilité et sécurise la saisie IP/pseudo. La sélection bleue est conservée
+car elle fournit un feedback système attendu lors de l'édition de texte.
+
 ## Typographie Arcade Globale
 - La police est désormais pilotée au niveau `App.axaml` pour tout le client.
 - Une pile de polices orientée 8-bit est appliquée globalement sur les contrôles texte

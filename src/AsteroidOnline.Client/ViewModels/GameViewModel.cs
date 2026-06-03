@@ -9,6 +9,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using AsteroidOnline.Client.Input;
 using AsteroidOnline.Client.Rendering;
 using AsteroidOnline.Client.Services;
+using AsteroidOnline.Domain.World;
 using AsteroidOnline.Domain.Systems;
 using AsteroidOnline.GameLogic.Interfaces;
 using AsteroidOnline.Shared.Packets;
@@ -27,9 +28,11 @@ public partial class GameViewModel : ViewModelBase, IDisposable
     private readonly PlayerSession _playerSession;
     private readonly IGameAudioService _gameAudioService;
 
-    private readonly DispatcherTimer _gameTimer;
     private readonly Stopwatch _stopwatch = Stopwatch.StartNew();
     private long _lastTickTimestamp;
+    private bool _isDisposed;
+    private bool _animationFrameScheduled;
+    private TopLevel? _animationTopLevel;
 
     private InputHandler? _inputHandler;
     private GameRenderer? _renderer;
@@ -37,6 +40,13 @@ public partial class GameViewModel : ViewModelBase, IDisposable
     private GameStateSnapshotPacket? _previousSnapshot;
     private GameStateSnapshotPacket? _currentSnapshot;
     private double _currentSnapshotReceivedAtSec;
+    private readonly GameStateSnapshotPacket _renderSnapshot = new();
+    private readonly Dictionary<int, PlayerSnapshot> _previousPlayersById = new();
+    private readonly Dictionary<int, AsteroidSnapshot> _previousAsteroidsById = new();
+    private readonly Dictionary<int, ProjectileSnapshot> _previousProjectilesById = new();
+    private readonly Dictionary<int, PlayerSnapshot> _renderPlayersById = new();
+    private readonly Dictionary<int, AsteroidSnapshot> _renderAsteroidsById = new();
+    private readonly Dictionary<int, ProjectileSnapshot> _renderProjectilesById = new();
 
     private const double SnapshotIntervalSec = 0.05; // 20 Hz
 
@@ -44,6 +54,9 @@ public partial class GameViewModel : ViewModelBase, IDisposable
     private float _dashCooldownRemaining;
     private bool _dashWasPressedLastFrame;
     private bool _fireWasPressedLastFrame;
+    private bool _spectateNextWasPressedLastFrame;
+    private bool _spectatePreviousWasPressedLastFrame;
+    private int _spectatedPlayerId;
 
     /// <summary>Identifiant du joueur local en session.</summary>
     public int LocalPlayerId => _playerSession.PlayerId;
@@ -56,6 +69,8 @@ public partial class GameViewModel : ViewModelBase, IDisposable
     [ObservableProperty] private bool _isDashReady = true;
     [ObservableProperty] private bool _isInvulnerable;
     [ObservableProperty] private double _invulnerabilitySecondsRemaining;
+    [ObservableProperty] private bool _isSpectating;
+    [ObservableProperty] private string _spectatedPlayerName = string.Empty;
 
     [ObservableProperty] private string _eliminationFeedText = string.Empty;
     [ObservableProperty] private bool _showEliminationFeed;
@@ -79,24 +94,21 @@ public partial class GameViewModel : ViewModelBase, IDisposable
 
         _networkService.PacketReceived += OnPacketReceived;
 
-        _gameTimer = new DispatcherTimer(
-            TimeSpan.FromMilliseconds(16),
-            DispatcherPriority.Render,
-            OnGameTick);
-
         _lastTickTimestamp = _stopwatch.ElapsedMilliseconds;
-        _gameTimer.Start();
     }
 
     /// <summary>
     /// Branche l'InputHandler sur la source clavier et le renderer sur le canvas.
     /// </summary>
-    public void Attach(Avalonia.Input.IInputElement inputSource, Canvas gameCanvas)
+    public void Attach(Avalonia.Input.IInputElement inputSource, GameCanvasControl gameCanvas)
     {
         _inputHandler?.Dispose();
         _inputHandler = new InputHandler(inputSource);
         _renderer = new GameRenderer(gameCanvas, _gameAudioService);
         _gameAudioService.StartAmbientLoop();
+
+        _animationTopLevel = inputSource as TopLevel ?? TopLevel.GetTopLevel(gameCanvas);
+        ScheduleNextAnimationFrame();
     }
 
     /// <summary>
@@ -107,7 +119,23 @@ public partial class GameViewModel : ViewModelBase, IDisposable
         _inputHandler?.ClearAll();
     }
 
-    private void OnGameTick(object? sender, EventArgs e)
+    private void ScheduleNextAnimationFrame()
+    {
+        if (_isDisposed || _animationFrameScheduled || _animationTopLevel is null)
+            return;
+
+        _animationFrameScheduled = true;
+        _animationTopLevel.RequestAnimationFrame(OnAnimationFrame);
+    }
+
+    private void OnAnimationFrame(TimeSpan frameTime)
+    {
+        _animationFrameScheduled = false;
+        OnGameTick();
+        ScheduleNextAnimationFrame();
+    }
+
+    private void OnGameTick()
     {
         var now = _stopwatch.ElapsedMilliseconds;
         var deltaTime = (now - _lastTickTimestamp) / 1000f;
@@ -124,31 +152,84 @@ public partial class GameViewModel : ViewModelBase, IDisposable
 
         NetworkLatencyMs = _networkService.LatencyMs;
 
-        _networkService.PollEvents();
-
         if (_inputHandler is null) return;
 
         var inputState = _inputHandler.GetCurrentState();
+        var renderSnapshot = BuildRenderSnapshot();
+        var isSpectating = UpdateSpectatorState(inputState, renderSnapshot);
 
         _networkService.SendUnreliable(new PlayerInputPacket
         {
-            ThrustForward = inputState.ThrustForward,
-            RotateLeft = inputState.RotateLeft,
-            RotateRight = inputState.RotateRight,
-            Fire = inputState.Fire,
-            Dash = inputState.Dash,
+            ThrustForward = !isSpectating && inputState.ThrustForward,
+            RotateLeft = !isSpectating && inputState.RotateLeft,
+            RotateRight = !isSpectating && inputState.RotateRight,
+            Fire = !isSpectating && inputState.Fire,
+            Dash = !isSpectating && inputState.Dash,
             Timestamp = now,
         });
 
-        UpdateDashPrediction(inputState, deltaTime);
-        UpdateShotAudio(inputState);
-
-        if (_renderer is not null)
+        if (!isSpectating)
         {
-            var renderSnapshot = BuildRenderSnapshot();
-            if (renderSnapshot is not null)
-                _renderer.Render(renderSnapshot, LocalPlayerId, _playerSession.GetRosterSnapshot());
+            UpdateDashPrediction(inputState, deltaTime);
+            UpdateShotAudio(inputState);
         }
+
+        if (_renderer is not null && renderSnapshot is not null)
+        {
+            var cameraPlayerId = isSpectating && _spectatedPlayerId > 0
+                ? _spectatedPlayerId
+                : LocalPlayerId;
+            _renderer.Render(renderSnapshot, LocalPlayerId, cameraPlayerId, _playerSession.GetRosterSnapshot());
+        }
+    }
+
+    private bool UpdateSpectatorState(PlayerInputState inputState, GameStateSnapshotPacket? snapshot)
+    {
+        if (snapshot is null)
+        {
+            IsSpectating = false;
+            SpectatedPlayerName = string.Empty;
+            return false;
+        }
+
+        var localPlayer = snapshot.Players.Find(p => p.Id == LocalPlayerId);
+        var alivePlayers = snapshot.Players
+            .Where(p => p.IsAlive)
+            .OrderBy(p => p.Id)
+            .ToList();
+        var shouldSpectate = localPlayer is not null && !localPlayer.IsAlive && alivePlayers.Count > 0;
+
+        if (!shouldSpectate)
+        {
+            _spectatedPlayerId = 0;
+            _spectateNextWasPressedLastFrame = inputState.SpectateNext;
+            _spectatePreviousWasPressedLastFrame = inputState.SpectatePrevious;
+            IsSpectating = false;
+            SpectatedPlayerName = string.Empty;
+            return false;
+        }
+
+        if (!alivePlayers.Any(p => p.Id == _spectatedPlayerId))
+            _spectatedPlayerId = alivePlayers[0].Id;
+
+        var nextPressed = inputState.SpectateNext && !_spectateNextWasPressedLastFrame;
+        var previousPressed = inputState.SpectatePrevious && !_spectatePreviousWasPressedLastFrame;
+        if (nextPressed ^ previousPressed)
+        {
+            var currentIndex = alivePlayers.FindIndex(p => p.Id == _spectatedPlayerId);
+            if (currentIndex < 0)
+                currentIndex = 0;
+
+            var offset = nextPressed ? 1 : -1;
+            var nextIndex = (currentIndex + offset + alivePlayers.Count) % alivePlayers.Count;
+            _spectatedPlayerId = alivePlayers[nextIndex].Id;
+        }
+
+        _spectateNextWasPressedLastFrame = inputState.SpectateNext;
+        _spectatePreviousWasPressedLastFrame = inputState.SpectatePrevious;
+        IsSpectating = true;
+        SpectatedPlayerName = _playerSession.GetPlayerName(_spectatedPlayerId);
+        return true;
     }
 
     private void UpdateDashPrediction(PlayerInputState inputState, float deltaTime)
@@ -206,6 +287,7 @@ public partial class GameViewModel : ViewModelBase, IDisposable
             _previousSnapshot = _currentSnapshot;
             _currentSnapshot = packet;
             _currentSnapshotReceivedAtSec = _stopwatch.Elapsed.TotalSeconds;
+            RebuildPreviousSnapshotIndexes(_previousSnapshot);
 
             AlivePlayersCount = packet.AlivePlayersCount;
 
@@ -263,8 +345,26 @@ public partial class GameViewModel : ViewModelBase, IDisposable
                 _networkService,
                 winnerName,
                 MyScore,
-                packet.IsSoloMode));
+                packet.IsSoloMode,
+                BuildFinalRanking()));
         });
+    }
+
+    private IReadOnlyList<FinalRankingEntry> BuildFinalRanking()
+    {
+        if (_currentSnapshot is null)
+            return [];
+
+        return _currentSnapshot.Players
+            .OrderByDescending(p => p.Score)
+            .ThenByDescending(p => p.IsAlive)
+            .ThenBy(p => p.Id)
+            .Select((p, index) => new FinalRankingEntry(
+                index + 1,
+                _playerSession.GetPlayerName(p.Id),
+                p.Score,
+                p.IsAlive))
+            .ToList();
     }
 
     private GameStateSnapshotPacket? BuildRenderSnapshot()
@@ -281,69 +381,122 @@ public partial class GameViewModel : ViewModelBase, IDisposable
         return InterpolateSnapshots(_previousSnapshot, _currentSnapshot, (float)alpha);
     }
 
-    private static GameStateSnapshotPacket InterpolateSnapshots(
+    private GameStateSnapshotPacket InterpolateSnapshots(
         GameStateSnapshotPacket previous,
         GameStateSnapshotPacket current,
         float alpha)
     {
-        var result = new GameStateSnapshotPacket
-        {
-            ServerTimestamp = current.ServerTimestamp,
-            AlivePlayersCount = current.AlivePlayersCount,
-        };
+        _renderSnapshot.ServerTimestamp = current.ServerTimestamp;
+        _renderSnapshot.AlivePlayersCount = current.AlivePlayersCount;
+        _renderSnapshot.Players.Clear();
+        _renderSnapshot.Asteroids.Clear();
+        _renderSnapshot.Projectiles.Clear();
 
-        var previousPlayersById = previous.Players.ToDictionary(p => p.Id);
         foreach (var p in current.Players)
         {
-            previousPlayersById.TryGetValue(p.Id, out var p0);
-            result.Players.Add(new PlayerSnapshot
-            {
-                Id = p.Id,
-                X = LerpWrapped(p0?.X ?? p.X, p.X, alpha, AsteroidOnline.Domain.World.WorldBounds.Default.Width),
-                Y = LerpWrapped(p0?.Y ?? p.Y, p.Y, alpha, AsteroidOnline.Domain.World.WorldBounds.Default.Height),
-                Rotation = LerpAngle(p0?.Rotation ?? p.Rotation, p.Rotation, alpha),
-                VelocityX = Lerp(p0?.VelocityX ?? p.VelocityX, p.VelocityX, alpha),
-                VelocityY = Lerp(p0?.VelocityY ?? p.VelocityY, p.VelocityY, alpha),
-                Color = p.Color,
-                IsAlive = p.IsAlive,
-                DashCooldownProgress = Lerp(p0?.DashCooldownProgress ?? p.DashCooldownProgress, p.DashCooldownProgress, alpha),
-                Score = p.Score,
-                LivesRemaining = p.LivesRemaining,
-                IsInvulnerable = p.IsInvulnerable,
-                InvulnerabilityRemaining = p.InvulnerabilityRemaining,
-            });
+            _previousPlayersById.TryGetValue(p.Id, out var p0);
+            var target = GetOrCreate(_renderPlayersById, p.Id, static () => new PlayerSnapshot());
+            target.Id = p.Id;
+            target.X = LerpWrapped(p0?.X ?? p.X, p.X, alpha, WorldBounds.Default.Width);
+            target.Y = LerpWrapped(p0?.Y ?? p.Y, p.Y, alpha, WorldBounds.Default.Height);
+            target.Rotation = LerpAngle(p0?.Rotation ?? p.Rotation, p.Rotation, alpha);
+            target.VelocityX = Lerp(p0?.VelocityX ?? p.VelocityX, p.VelocityX, alpha);
+            target.VelocityY = Lerp(p0?.VelocityY ?? p.VelocityY, p.VelocityY, alpha);
+            target.Color = p.Color;
+            target.IsAlive = p.IsAlive;
+            target.DashCooldownProgress = Lerp(p0?.DashCooldownProgress ?? p.DashCooldownProgress, p.DashCooldownProgress, alpha);
+            target.Score = p.Score;
+            target.LivesRemaining = p.LivesRemaining;
+            target.IsInvulnerable = p.IsInvulnerable;
+            target.InvulnerabilityRemaining = p.InvulnerabilityRemaining;
+            _renderSnapshot.Players.Add(target);
         }
 
-        var previousAsteroidsById = previous.Asteroids.ToDictionary(a => a.Id);
         foreach (var a in current.Asteroids)
         {
-            previousAsteroidsById.TryGetValue(a.Id, out var a0);
-            result.Asteroids.Add(new AsteroidSnapshot
-            {
-                Id = a.Id,
-                X = LerpWrapped(a0?.X ?? a.X, a.X, alpha, AsteroidOnline.Domain.World.WorldBounds.Default.Width),
-                Y = LerpWrapped(a0?.Y ?? a.Y, a.Y, alpha, AsteroidOnline.Domain.World.WorldBounds.Default.Height),
-                Rotation = LerpAngle(a0?.Rotation ?? a.Rotation, a.Rotation, alpha),
-                Size = a.Size,
-                HitPoints = a.HitPoints,
-            });
+            _previousAsteroidsById.TryGetValue(a.Id, out var a0);
+            var target = GetOrCreate(_renderAsteroidsById, a.Id, static () => new AsteroidSnapshot());
+            target.Id = a.Id;
+            target.X = LerpWrapped(a0?.X ?? a.X, a.X, alpha, WorldBounds.Default.Width);
+            target.Y = LerpWrapped(a0?.Y ?? a.Y, a.Y, alpha, WorldBounds.Default.Height);
+            target.Rotation = LerpAngle(a0?.Rotation ?? a.Rotation, a.Rotation, alpha);
+            target.Size = a.Size;
+            target.HitPoints = a.HitPoints;
+            _renderSnapshot.Asteroids.Add(target);
         }
 
-        var previousProjectilesById = previous.Projectiles.ToDictionary(pr => pr.Id);
         foreach (var pr in current.Projectiles)
         {
-            previousProjectilesById.TryGetValue(pr.Id, out var pr0);
-            result.Projectiles.Add(new ProjectileSnapshot
-            {
-                Id = pr.Id,
-                X = LerpWrapped(pr0?.X ?? pr.X, pr.X, alpha, AsteroidOnline.Domain.World.WorldBounds.Default.Width),
-                Y = LerpWrapped(pr0?.Y ?? pr.Y, pr.Y, alpha, AsteroidOnline.Domain.World.WorldBounds.Default.Height),
-                OwnerId = pr.OwnerId,
-            });
+            _previousProjectilesById.TryGetValue(pr.Id, out var pr0);
+            var target = GetOrCreate(_renderProjectilesById, pr.Id, static () => new ProjectileSnapshot());
+            target.Id = pr.Id;
+            target.X = LerpWrapped(pr0?.X ?? pr.X, pr.X, alpha, WorldBounds.Default.Width);
+            target.Y = LerpWrapped(pr0?.Y ?? pr.Y, pr.Y, alpha, WorldBounds.Default.Height);
+            target.OwnerId = pr.OwnerId;
+            _renderSnapshot.Projectiles.Add(target);
         }
 
-        return result;
+        PruneRenderCache(_renderPlayersById, current.Players);
+        PruneRenderCache(_renderAsteroidsById, current.Asteroids);
+        PruneRenderCache(_renderProjectilesById, current.Projectiles);
+
+        return _renderSnapshot;
     }
+
+    private void RebuildPreviousSnapshotIndexes(GameStateSnapshotPacket? snapshot)
+    {
+        _previousPlayersById.Clear();
+        _previousAsteroidsById.Clear();
+        _previousProjectilesById.Clear();
+
+        if (snapshot is null)
+            return;
+
+        foreach (var player in snapshot.Players)
+            _previousPlayersById[player.Id] = player;
+        foreach (var asteroid in snapshot.Asteroids)
+            _previousAsteroidsById[asteroid.Id] = asteroid;
+        foreach (var projectile in snapshot.Projectiles)
+            _previousProjectilesById[projectile.Id] = projectile;
+    }
+
+    private static T GetOrCreate<T>(Dictionary<int, T> cache, int id, Func<T> factory)
+        where T : class
+    {
+        if (cache.TryGetValue(id, out var value))
+            return value;
+
+        value = factory();
+        cache[id] = value;
+        return value;
+    }
+
+    private static void PruneRenderCache<TSnapshot>(
+        Dictionary<int, TSnapshot> cache,
+        IReadOnlyList<TSnapshot> liveSnapshots)
+        where TSnapshot : class
+    {
+        if (cache.Count <= liveSnapshots.Count + 8)
+            return;
+
+        var liveIds = new HashSet<int>(liveSnapshots.Count);
+        foreach (var snapshot in liveSnapshots)
+            liveIds.Add(GetSnapshotId(snapshot));
+
+        foreach (var id in cache.Keys.ToArray())
+        {
+            if (!liveIds.Contains(id))
+                cache.Remove(id);
+        }
+    }
+
+    private static int GetSnapshotId(object snapshot) => snapshot switch
+    {
+        PlayerSnapshot player => player.Id,
+        AsteroidSnapshot asteroid => asteroid.Id,
+        ProjectileSnapshot projectile => projectile.Id,
+        _ => 0,
+    };
 
     private static int ComputeRank(GameStateSnapshotPacket packet, int localPlayerId)
     {
@@ -384,7 +537,7 @@ public partial class GameViewModel : ViewModelBase, IDisposable
 
     public void Dispose()
     {
-        _gameTimer.Stop();
+        _isDisposed = true;
         _inputHandler?.Dispose();
         _gameAudioService.StopAmbientLoop();
         _networkService.PacketReceived -= OnPacketReceived;

@@ -31,13 +31,37 @@
 - [ ] Pas de crash si l'audio système est indisponible.
 - [ ] L'ambiance reste active pendant les tirs/explosions (pas de coupure).
 - [ ] Plusieurs tirs rapides s'entendent en superposition.
+- [ ] Un tir répété ne provoque pas de chute FPS visible.
+- [ ] Une cascade d'explosions ne sature pas l'audio.
 
 ## F. Réseau et rendu
 - [ ] Aucune `TooBigPacketException` après plusieurs minutes avec tirs, fragments et 20 joueurs simulés.
 - [ ] Pas d'effet de saut massif lors du wrap-around gauche/droite ou haut/bas.
 - [ ] Les pseudos restent lisibles au-dessus des vaisseaux sans masquer le gameplay.
+- [ ] Le respawn après perte de vie ne freeze pas les autres joueurs.
+- [ ] Le compteur FPS reste stable pendant 30 secondes de tirs continus.
+- [ ] Le gameplay reste proche de 60 FPS en solo avec tirs continus.
+- [ ] Le gameplay reste proche de 60 FPS en multijoueur avec plusieurs projectiles et explosions.
+- [ ] Les astéroïdes visibles autour du joueur sont bien reçus même quand la map contient plus d'astéroïdes.
+- [ ] Le serveur ne perd pas les collisions avec les astéroïdes hors caméra.
 
 ## G. Régression globale
 - [ ] Synchronisation lobby/gameover conservée.
 - [ ] Score, vies et invulnérabilité restent cohérents.
 - [ ] Aucun blocage de navigation entre vues.
+
+## H. Mode spectateur
+- [ ] Un joueur éliminé passe en spectateur si d'autres joueurs sont encore vivants.
+- [ ] La caméra suit un joueur vivant.
+- [ ] `Tab` ou `PageDown` change vers le joueur vivant suivant.
+- [ ] `R` ou `PageUp` change vers le joueur vivant précédent.
+- [ ] Appuyer simultanément sur précédent et suivant ne change pas de cible.
+- [ ] Les tirs/dash/pilotage ne contrôlent plus le joueur éliminé.
+- [ ] Le mode spectateur ne se déclenche pas pendant une simple perte de vie avec respawn.
+
+## I. Connexion et fin de partie
+- [ ] Les champs pseudo, IP et port restent lisibles lorsqu'ils sont focus.
+- [ ] Les champs pseudo, IP et port restent lisibles sur un écran à scaling Windows élevé.
+- [ ] L'écran de fin affiche un classement final complet.
+- [ ] Le classement final est trié par score décroissant.
+- [ ] Le classement affiche le statut survivant/éliminé.

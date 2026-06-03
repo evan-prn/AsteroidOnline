@@ -2,6 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:AsteroidOnline.Client.ViewModels"
              xmlns:conv="using:AsteroidOnline.Client.Converters"
+             xmlns:rendering="using:AsteroidOnline.Client.Rendering"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d" d:DesignWidth="1280" d:DesignHeight="720"
@@ -11,10 +12,9 @@
              Focusable="True">
 
   <Grid>
-    <Canvas x:Name="GameCanvas"
-            Background="#05060D"
-            HorizontalAlignment="Stretch"
-            VerticalAlignment="Stretch" />
+    <rendering:GameCanvasControl x:Name="GameCanvas"
+                                 HorizontalAlignment="Stretch"
+                                 VerticalAlignment="Stretch" />
 
     <Panel IsHitTestVisible="False">
       <Border HorizontalAlignment="Left"
@@ -110,6 +110,37 @@
                    Foreground="#FFE3E3"
                    FontSize="15"
                    FontWeight="SemiBold" />
+      </Border>
+
+      <Border HorizontalAlignment="Center"
+              VerticalAlignment="Top"
+              Margin="0,64,0,0"
+              Padding="14,8"
+              CornerRadius="8"
+              Background="#B0091321"
+              BorderBrush="#77FFC76D"
+              BorderThickness="1"
+              IsVisible="{Binding IsSpectating}">
+        <StackPanel Spacing="3" HorizontalAlignment="Center">
+          <TextBlock Text="MODE SPECTATEUR"
+                     Foreground="#FFC76D"
+                     FontSize="12"
+                     FontWeight="Bold"
+                     HorizontalAlignment="Center" />
+          <TextBlock Foreground="#E7F0FF"
+                     FontSize="13"
+                     HorizontalAlignment="Center">
+            <TextBlock.Text>
+              <MultiBinding StringFormat="Vue : {0}">
+                <Binding Path="SpectatedPlayerName" />
+              </MultiBinding>
+            </TextBlock.Text>
+          </TextBlock>
+          <TextBlock Text="TAB suivant / R précédent"
+                     Foreground="#8BD7FF"
+                     FontSize="11"
+                     HorizontalAlignment="Center" />
+        </StackPanel>
       </Border>
 
       <Border HorizontalAlignment="Left"

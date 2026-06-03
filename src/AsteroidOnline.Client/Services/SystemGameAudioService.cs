@@ -16,7 +16,10 @@ public sealed class SystemGameAudioService : IGameAudioService, IDisposable
     private readonly string? _ambientPath;
     private readonly object _sync = new();
     private readonly List<IWavePlayer> _activeOneShots = new();
+    private const int MaxSimultaneousOneShots = 8;
 
+    private readonly CachedSound? _shotSound;
+    private readonly CachedSound? _explosionSound;
     private IWavePlayer? _ambientOutput;
     private AudioFileReader? _ambientReader;
     private LoopStream? _ambientLoop;
@@ -44,22 +47,25 @@ public sealed class SystemGameAudioService : IGameAudioService, IDisposable
             "music.mp3",
             "ambience.wav",
             "music.wav");
+
+        _shotSound = TryLoadCachedSound(_shotPath);
+        _explosionSound = TryLoadCachedSound(_explosionPath);
     }
 
     public void PlayShot()
     {
-        if (!CanPlay(ref _lastShotAtMs, 35) || string.IsNullOrWhiteSpace(_shotPath))
+        if (!CanPlay(ref _lastShotAtMs, 35) || _shotSound is null)
             return;
 
-        PlayOneShot(_shotPath, 0.90f);
+        PlayOneShot(_shotSound, 0.90f);
     }
 
     public void PlayAsteroidExplosion()
     {
-        if (!CanPlay(ref _lastExplosionAtMs, 90) || string.IsNullOrWhiteSpace(_explosionPath))
+        if (!CanPlay(ref _lastExplosionAtMs, 90) || _explosionSound is null)
             return;
 
-        PlayOneShot(_explosionPath, 0.95f);
+        PlayOneShot(_explosionSound, 0.95f);
     }
 
     public void StartAmbientLoop()
@@ -102,25 +108,19 @@ public sealed class SystemGameAudioService : IGameAudioService, IDisposable
         }
     }
 
-    private void PlayOneShot(string path, float volume)
+    private void PlayOneShot(CachedSound sound, float volume)
     {
-        if (!File.Exists(path))
-            return;
-
-        AudioFileReader? reader = null;
         WaveOutEvent? output = null;
         try
         {
-            reader = new AudioFileReader(path) { Volume = volume };
             output = new WaveOutEvent
             {
                 DesiredLatency = 60,
                 NumberOfBuffers = 2,
             };
-            output.Init(reader);
+            output.Init(new CachedSoundSampleProvider(sound, volume));
 
             var capturedOutput = output;
-            var capturedReader = reader;
             output.PlaybackStopped += (_, _) =>
             {
                 lock (_sync)
@@ -129,11 +129,16 @@ public sealed class SystemGameAudioService : IGameAudioService, IDisposable
                 }
 
                 capturedOutput.Dispose();
-                capturedReader.Dispose();
             };
 
             lock (_sync)
             {
+                if (_activeOneShots.Count >= MaxSimultaneousOneShots)
+                {
+                    output.Dispose();
+                    return;
+                }
+
                 _activeOneShots.Add(output);
             }
 
@@ -142,7 +147,6 @@ public sealed class SystemGameAudioService : IGameAudioService, IDisposable
         catch
         {
             output?.Dispose();
-            reader?.Dispose();
         }
     }
 
@@ -177,6 +181,21 @@ public sealed class SystemGameAudioService : IGameAudioService, IDisposable
         }
 
         return null;
+    }
+
+    private static CachedSound? TryLoadCachedSound(string? path)
+    {
+        if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
+            return null;
+
+        try
+        {
+            return new CachedSound(path);
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     private void DisposeAmbient_NoLock()
@@ -246,6 +265,56 @@ public sealed class SystemGameAudioService : IGameAudioService, IDisposable
             }
 
             return totalRead;
+        }
+    }
+
+    private sealed class CachedSound
+    {
+        public CachedSound(string audioFileName)
+        {
+            using var audioFileReader = new AudioFileReader(audioFileName);
+            WaveFormat = audioFileReader.WaveFormat;
+
+            var wholeFile = new List<float>((int)(audioFileReader.Length / 4));
+            var readBuffer = new float[audioFileReader.WaveFormat.SampleRate * audioFileReader.WaveFormat.Channels];
+            int samplesRead;
+            while ((samplesRead = audioFileReader.Read(readBuffer, 0, readBuffer.Length)) > 0)
+            {
+                for (var i = 0; i < samplesRead; i++)
+                    wholeFile.Add(readBuffer[i]);
+            }
+
+            AudioData = wholeFile.ToArray();
+        }
+
+        public float[] AudioData { get; }
+        public WaveFormat WaveFormat { get; }
+    }
+
+    private sealed class CachedSoundSampleProvider : ISampleProvider
+    {
+        private readonly CachedSound _cachedSound;
+        private readonly float _volume;
+        private long _position;
+
+        public CachedSoundSampleProvider(CachedSound cachedSound, float volume)
+        {
+            _cachedSound = cachedSound;
+            _volume = Math.Clamp(volume, 0f, 1f);
+        }
+
+        public WaveFormat WaveFormat => _cachedSound.WaveFormat;
+
+        public int Read(float[] buffer, int offset, int count)
+        {
+            var availableSamples = _cachedSound.AudioData.Length - _position;
+            var samplesToCopy = (int)Math.Min(availableSamples, count);
+
+            for (var i = 0; i < samplesToCopy; i++)
+                buffer[offset + i] = _cachedSound.AudioData[(int)_position + i] * _volume;
+
+            _position += samplesToCopy;
+            return samplesToCopy;
         }
     }
 }
