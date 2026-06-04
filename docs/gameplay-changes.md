@@ -61,3 +61,26 @@ l'état des joueurs, projectiles et astéroïdes.
 Le dernier snapshot contient déjà les scores et l'état vivant/éliminé des joueurs.
 Réutiliser cette donnée évite d'ajouter un paquet réseau supplémentaire pour une
 information purement UI.
+
+## 7. Power-up laser continu
+
+### Comportement
+- Un astéroïde `Large` ou `Medium` détruit peut faire apparaître un power-up laser.
+- Le taux d'apparition est de `15%`.
+- Le power-up est collecté par collision entre le vaisseau et le bonus au sol.
+- Une charge laser est ajoutée au joueur, avec un plafond de 3 charges.
+- La touche `C` active le laser, proche de la zone ZQSD.
+- Le laser reste actif `2.5` secondes.
+- Le rayon est droit, long, et inflige des dégâts continus très rapides aux astéroïdes traversés.
+- Le laser ne réintroduit pas de PvP : il cible uniquement les astéroïdes.
+
+### Justification
+Le laser est traité côté serveur pour rester cohérent en multijoueur.
+Le client affiche le rayon, le HUD et les power-ups depuis le snapshot serveur,
+mais ne décide jamais seul des dégâts.
+
+### Impact gameplay
+- Le bonus est rare, donc spectaculaire sans trivialiser toutes les vagues.
+- La durée courte crée une fenêtre d'utilisation nerveuse.
+- La touche `C` reste accessible sans déplacer fortement la main depuis ZQSD.
+

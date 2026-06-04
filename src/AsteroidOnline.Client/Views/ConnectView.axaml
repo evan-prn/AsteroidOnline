@@ -79,7 +79,7 @@
             BorderBrush="#55FFB95F"
             BorderThickness="1">
       <StackPanel Spacing="10">
-        <TextBlock Text="ASTEROID STRIKE CO-OP"
+        <TextBlock Text="ASTEROID ONLINE"
                    FontSize="38"
                    FontWeight="Bold"
                    Foreground="#FFCC6F"

@@ -10,6 +10,7 @@ Cette passe corrige les limitations restantes du rendu et du cycle de partie, sa
 - Relance de partie robuste après GameOver et retour lobby.
 - Réduction de l'effet de rollback visuel grâce à une interpolation compatible avec le wrap-around.
 - Affichage du pseudo au-dessus de chaque vaisseau pour l'identification en coop.
+- Ajout d'un power-up laser continu rare, activable avec `C`.
 - Snapshot réseau compacté pour éviter les freezes liés aux paquets UDP trop gros.
 - Optimisations FPS/latence documentées dans `performance-optimization.md`.
 - Guide des points d'entrée du code ajouté dans `code-modification-guide.md`.

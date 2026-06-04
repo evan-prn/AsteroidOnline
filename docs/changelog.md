@@ -1,4 +1,4 @@
-# Changelog
+﻿# Changelog
 
 ## Derniers ajouts
 
@@ -29,6 +29,12 @@
 - Les sons courts sont precharges pour eviter le decodage pendant les tirs et explosions.
 - L'ambiance reste independante des effets sonores.
 
+### Power-up laser continu
+- Ajout d'un power-up laser rare avec un taux de drop de 15%.
+- Le laser s'active avec `C`, dure 2.5 secondes et detruit rapidement les asteroides dans un rayon droit.
+- Le bonus est gere cote serveur, synchronise dans les snapshots et rendu cote client avec HUD dedie.
+- Le laser reste cooperatif : il ne fait pas de degats aux autres joueurs.
+
 ### Documentation technique
 - Ajout d'un guide des points de modification majeurs du code.
 - Le guide indique ou modifier les controles, vitesses, asteroides, map, joueurs, rendu, audio, reseau et cycle de partie.
@@ -37,3 +43,4 @@
 ## Notes
 - Ce changelog regroupe les ajouts stables par fonctionnalite.
 - Les iterations intermediaires de correction UI ne sont pas listees comme changements separes.
+

@@ -77,6 +77,15 @@ public class Ship : PhysicalEntity
     /// </summary>
     public float WeaponCooldown { get; set; }
 
+    /// <summary>Nombre de charges de laser disponibles.</summary>
+    public int LaserCharges { get; set; }
+
+    /// <summary>Temps de laser actif restant, en secondes.</summary>
+    public float LaserRemaining { get; set; }
+
+    /// <summary>Indique si le rayon laser est actuellement actif.</summary>
+    public bool IsLaserActive => LaserRemaining > 0f;
+
     // ──── PhysicalEntity ──────────────────────────────────────────────────────
 
     /// <summary>Rayon de collision du vaisseau : 16 unités.</summary>

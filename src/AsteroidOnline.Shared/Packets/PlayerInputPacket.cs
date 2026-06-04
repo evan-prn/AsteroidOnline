@@ -15,6 +15,7 @@ public class PlayerInputPacket : IPacket
     private const byte MaskRotateRight = 0x04;
     private const byte MaskFire        = 0x08;
     private const byte MaskDash        = 0x10;
+    private const byte MaskLaser       = 0x20;
 
     /// <inheritdoc/>
     public PacketType Type => PacketType.PlayerInput;
@@ -49,6 +50,9 @@ public class PlayerInputPacket : IPacket
     /// </summary>
     public bool Dash { get; set; }
 
+    /// <summary>Activation du power-up laser (C par defaut).</summary>
+    public bool Laser { get; set; }
+
     /// <summary>
     /// Timestamp client en millisecondes (Stopwatch.GetTimestamp converti).
     /// Permet au serveur de réordonner les paquets arrivés dans le désordre
@@ -66,6 +70,7 @@ public class PlayerInputPacket : IPacket
         if (RotateRight)   flags |= MaskRotateRight;
         if (Fire)          flags |= MaskFire;
         if (Dash)          flags |= MaskDash;
+        if (Laser)         flags |= MaskLaser;
 
         writer.Write(flags);
         writer.Write(Timestamp);
@@ -81,6 +86,7 @@ public class PlayerInputPacket : IPacket
         RotateRight   = (flags & MaskRotateRight) != 0;
         Fire          = (flags & MaskFire)        != 0;
         Dash          = (flags & MaskDash)        != 0;
+        Laser         = (flags & MaskLaser)       != 0;
 
         Timestamp = reader.ReadInt64();
     }

@@ -60,7 +60,7 @@ public partial class ConnectViewModel : ViewModelBase
 
     /// <summary>Adresse IP ou nom d'hôte du serveur (défaut : localhost).</summary>
     [ObservableProperty]
-    private string _serverAddress = "141.94.121.13";
+    private string _serverAddress = "10.31.32.146";
 
     /// <summary>Port TCP du serveur (défaut : 7777).</summary>
     [ObservableProperty]

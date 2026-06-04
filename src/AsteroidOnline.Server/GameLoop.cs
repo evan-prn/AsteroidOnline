@@ -1,10 +1,11 @@
-namespace AsteroidOnline.Server;
+﻿namespace AsteroidOnline.Server;
 
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
+using System.Numerics;
 using AsteroidOnline.Domain.Entities;
 using AsteroidOnline.Domain.Events;
 using AsteroidOnline.Domain.Systems;
@@ -41,6 +42,8 @@ public sealed class GameLoop : INetEventListener, IDisposable
     private const float  GameOverAutoReturnDelaySeconds = 8f;
     private const int    SnapshotAsteroidLimit = 28;
     private const int    SnapshotProjectileLimit = 36;
+    private const float  LaserDurationSeconds = 4.5f;
+    private const float  LaserLength = 1400f;
 
     // ── Infrastructure réseau ──────────────────────────────────────────────────
     private readonly NetManager _netManager;
@@ -53,9 +56,12 @@ public sealed class GameLoop : INetEventListener, IDisposable
     private readonly Dictionary<NetPeer, int>   _peerPlayerIds = new();
     private readonly Dictionary<int, Asteroid>  _asteroids  = new();
     private readonly Dictionary<int, Projectile> _projectiles = new();
+    private readonly Dictionary<int, PowerUp> _powerUps = new();
     private readonly List<Ship> _shipsCollisionBuffer = new(MaxPlayers);
     private readonly List<int> _projectilesToRemove = new(64);
+    private readonly List<int> _powerUpsToRemove = new(16);
     private readonly List<(int ProjectileId, int AsteroidId, int OwnerId)> _projectileAsteroidHits = new(64);
+    private readonly List<(int AsteroidId, int OwnerId)> _laserAsteroidHits = new(64);
     private readonly List<PhysicalEntity> _spawnBlockersBuffer = new(128);
 
     // Dernier input connu par joueur (thread-safe, mis à jour côté réseau).
@@ -83,6 +89,7 @@ public sealed class GameLoop : INetEventListener, IDisposable
     private int _currentMatchPlayerCount;
     private int   _nextPlayerId = 1;
     private int   _nextProjectileId = 1;
+    private int   _nextPowerUpId = 5000;
     private readonly CancellationTokenSource _cts = new();
 
     /// <summary>
@@ -195,6 +202,7 @@ public sealed class GameLoop : INetEventListener, IDisposable
         _currentMatchPlayerCount = _ships.Count;
         _waveManager.Reset();
         _nextProjectileId = 1;
+        _nextPowerUpId = 5000;
         _asteroidSvc.Reset();
 
         // Spawn des joueurs à des positions sûres
@@ -212,11 +220,14 @@ public sealed class GameLoop : INetEventListener, IDisposable
             ship.IsDashing = false;
             ship.DashTimeRemaining = 0f;
             ship.WeaponCooldown = 0f;
+            ship.LaserCharges = 0;
+            ship.LaserRemaining = 0f;
             allEntities.Add(ship);
         }
 
         _asteroids.Clear();
         _projectiles.Clear();
+        _powerUps.Clear();
 
         // Densité d'astéroïdes adaptée à la taille du lobby.
         var initialAsteroidCount = Math.Clamp(8 + (_ships.Count / 2), 10, 22);
@@ -243,9 +254,11 @@ public sealed class GameLoop : INetEventListener, IDisposable
             var rotateRight   = input?.RotateRight ?? false;
             var fire          = input?.Fire ?? false;
             var dash          = input?.Dash ?? false;
+            var laser         = input?.Laser ?? false;
 
             _weapon.UpdateCooldown(ship, dt);
             _dash.Tick(ship, dash, dt);
+            TickLaser(ship, laser, dt);
             _physics.Tick(ship, thrustForward, rotateLeft, rotateRight, dt, in _bounds);
 
             var proj = _weapon.TryFire(ship, fire, _nextProjectileId);
@@ -276,6 +289,19 @@ public sealed class GameLoop : INetEventListener, IDisposable
         foreach (var id in _projectilesToRemove)
             _projectiles.Remove(id);
 
+        _powerUpsToRemove.Clear();
+        foreach (var powerUp in _powerUps.Values)
+        {
+            powerUp.LifetimeRemaining -= dt;
+            if (powerUp.LifetimeRemaining <= 0f)
+            {
+                powerUp.IsActive = false;
+                _powerUpsToRemove.Add(powerUp.Id);
+            }
+        }
+        foreach (var id in _powerUpsToRemove)
+            _powerUps.Remove(id);
+
         // 4. Détection de collisions
         ProcessCollisions();
 
@@ -301,6 +327,21 @@ public sealed class GameLoop : INetEventListener, IDisposable
 
     // ──── Collisions ───────────────────────────────────────────────────────────
 
+    private static void TickLaser(Ship ship, bool laserInput, float dt)
+    {
+        if (ship.LaserRemaining > 0f)
+        {
+            ship.LaserRemaining = MathF.Max(0f, ship.LaserRemaining - dt);
+            return;
+        }
+
+        if (!laserInput || ship.LaserCharges <= 0)
+            return;
+
+        ship.LaserCharges--;
+        ship.LaserRemaining = LaserDurationSeconds;
+    }
+
     private void ProcessCollisions()
     {
         _shipsCollisionBuffer.Clear();
@@ -325,6 +366,30 @@ public sealed class GameLoop : INetEventListener, IDisposable
                 DamageAsteroid(asteroid, hit.OwnerId);
         }
 
+        _laserAsteroidHits.Clear();
+        foreach (var ship in _ships.Values)
+        {
+            if (!ship.IsAlive || !ship.IsLaserActive)
+                continue;
+
+            var direction = new Vector2(MathF.Sin(ship.Rotation), -MathF.Cos(ship.Rotation));
+            var end = ship.Position + (direction * LaserLength);
+            foreach (var asteroid in _asteroids.Values)
+            {
+                if (!asteroid.IsActive)
+                    continue;
+
+                if (LaserIntersectsAsteroid(ship.Position, end, asteroid.Position, asteroid.CollisionRadius))
+                    _laserAsteroidHits.Add((asteroid.Id, ship.Id));
+            }
+        }
+
+        foreach (var hit in _laserAsteroidHits)
+        {
+            if (_asteroids.TryGetValue(hit.AsteroidId, out var asteroid))
+                DamageAsteroid(asteroid, hit.OwnerId);
+        }
+
         // Astéroïde ↔ Joueur (US-15)
         foreach (var asteroid in _asteroids.Values)
         {
@@ -332,6 +397,20 @@ public sealed class GameLoop : INetEventListener, IDisposable
             if (victim is null) continue;
             ApplyPlayerDamage(victim, "Astéroïde");
         }
+
+        _powerUpsToRemove.Clear();
+        foreach (var ship in _ships.Values)
+        {
+            var powerUp = _collision.CheckShipVsPowerUps(ship, _powerUps.Values);
+            if (powerUp is null)
+                continue;
+
+            ApplyPowerUp(ship, powerUp);
+            powerUp.IsActive = false;
+            _powerUpsToRemove.Add(powerUp.Id);
+        }
+        foreach (var id in _powerUpsToRemove)
+            _powerUps.Remove(id);
     }
 
     private void DamageAsteroid(Asteroid asteroid, int shooterId)
@@ -349,6 +428,19 @@ public sealed class GameLoop : INetEventListener, IDisposable
         {
             var newAsteroid = AsteroidSpawnService.CreateFromFragment(fragment);
             _asteroids[newAsteroid.Id] = newAsteroid;
+        }
+
+        if (evt.DropsPowerUp)
+        {
+            var powerUp = new PowerUp
+            {
+                Id = _nextPowerUpId++,
+                Type = PowerUpType.Laser,
+                Position = evt.Position,
+                LifetimeRemaining = 18f,
+                IsActive = true,
+            };
+            _powerUps[powerUp.Id] = powerUp;
         }
 
         if (shooterId > 0 && _ships.TryGetValue(shooterId, out var shooter))
@@ -375,6 +467,7 @@ public sealed class GameLoop : INetEventListener, IDisposable
 
         victim.IsAlive = false;
         victim.InvulnerabilityRemaining = 0f;
+        victim.LaserRemaining = 0f;
 
         var packet = new PlayerEliminatedPacket
         {
@@ -404,7 +497,14 @@ public sealed class GameLoop : INetEventListener, IDisposable
         ship.DashTimeRemaining = 0f;
         ship.DashCooldown = 0f;
         ship.WeaponCooldown = 0f;
+        ship.LaserRemaining = 0f;
         ship.InvulnerabilityRemaining = InvulnerabilitySecondsOnHit;
+    }
+
+    private static void ApplyPowerUp(Ship ship, PowerUp powerUp)
+    {
+        if (powerUp.Type == PowerUpType.Laser)
+            ship.LaserCharges = Math.Min(ship.LaserCharges + 1, 3);
     }
 
     private void CheckGameOver()
@@ -449,6 +549,9 @@ public sealed class GameLoop : INetEventListener, IDisposable
                 LivesRemaining       = ship.LivesRemaining,
                 IsInvulnerable       = ship.IsInvulnerable,
                 InvulnerabilityRemaining = ship.InvulnerabilityRemaining,
+                LaserCharges         = ship.LaserCharges,
+                LaserRemaining       = ship.LaserRemaining,
+                IsLaserActive        = ship.IsLaserActive,
             });
         }
 
@@ -473,6 +576,17 @@ public sealed class GameLoop : INetEventListener, IDisposable
                 X       = proj.Position.X,
                 Y       = proj.Position.Y,
                 OwnerId = proj.OwnerId,
+            });
+        }
+
+        foreach (var powerUp in _powerUps.Values)
+        {
+            snapshot.PowerUps.Add(new PowerUpSnapshot
+            {
+                Id = powerUp.Id,
+                X = powerUp.Position.X,
+                Y = powerUp.Position.Y,
+                Type = powerUp.Type,
             });
         }
 
@@ -799,8 +913,10 @@ public sealed class GameLoop : INetEventListener, IDisposable
 
         _asteroids.Clear();
         _projectiles.Clear();
+        _powerUps.Clear();
         _waveManager.Reset();
         _nextProjectileId = 1;
+        _nextPowerUpId = 5000;
         _asteroidSvc.Reset();
 
         foreach (var ship in _ships.Values)
@@ -811,6 +927,8 @@ public sealed class GameLoop : INetEventListener, IDisposable
             ship.IsDashing = false;
             ship.DashTimeRemaining = 0f;
             ship.WeaponCooldown = 0f;
+            ship.LaserCharges = 0;
+            ship.LaserRemaining = 0f;
             ship.LivesRemaining = StartingLives;
             ship.InvulnerabilityRemaining = 0f;
         }
@@ -873,4 +991,33 @@ public sealed class GameLoop : INetEventListener, IDisposable
         dy = MathF.Min(dy, _bounds.Height - dy);
         return (dx * dx) + (dy * dy);
     }
+
+    private bool LaserIntersectsAsteroid(Vector2 start, Vector2 end, Vector2 center, float radius)
+    {
+        for (var offsetX = -1; offsetX <= 1; offsetX++)
+        {
+            for (var offsetY = -1; offsetY <= 1; offsetY++)
+            {
+                var shiftedCenter = center + new Vector2(offsetX * _bounds.Width, offsetY * _bounds.Height);
+                if (SegmentIntersectsCircle(start, end, shiftedCenter, radius))
+                    return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool SegmentIntersectsCircle(Vector2 start, Vector2 end, Vector2 center, float radius)
+    {
+        var segment = end - start;
+        var lengthSquared = segment.LengthSquared();
+        if (lengthSquared <= float.Epsilon)
+            return Vector2.DistanceSquared(start, center) <= radius * radius;
+
+        var t = Vector2.Dot(center - start, segment) / lengthSquared;
+        t = Math.Clamp(t, 0f, 1f);
+        var closest = start + (segment * t);
+        return Vector2.DistanceSquared(closest, center) <= radius * radius;
+    }
 }
+

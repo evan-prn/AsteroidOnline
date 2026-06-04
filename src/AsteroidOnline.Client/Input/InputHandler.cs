@@ -66,6 +66,7 @@ public sealed class InputHandler : IDisposable
                 Dash          = _pressedKeys.Contains(Key.LeftShift)
                              || _pressedKeys.Contains(Key.RightShift)
                              || _pressedKeys.Contains(Key.E),
+                Laser         = _pressedKeys.Contains(Key.C),
                 SpectateNext  = _pressedKeys.Contains(Key.Tab)
                              || _pressedKeys.Contains(Key.PageDown),
                 SpectatePrevious = _pressedKeys.Contains(Key.R)
@@ -112,7 +113,7 @@ public sealed class InputHandler : IDisposable
         Key.A or Key.Q or Key.Left or
         Key.D or Key.Right or
         Key.Space or Key.F or
-        Key.LeftShift or Key.RightShift or Key.E or
+        Key.LeftShift or Key.RightShift or Key.E or Key.C or
         Key.Tab or Key.R or Key.PageDown or Key.PageUp;
 
     /// <summary>Se désabonne des événements clavier à la destruction.</summary>

@@ -100,3 +100,25 @@ une sélection proche de sa caméra pour réduire rendu, désérialisation et ta
 des paquets.
 
 Voir aussi `docs/performance-optimization.md`.
+
+## 8. Power-up laser serveur autoritaire
+
+### Décision
+Le laser continu est ajouté comme power-up serveur :
+- entité `PowerUp` dans le domaine ;
+- drop à `15%` dans `AsteroidSpawnService`;
+- collecte et activation dans `GameLoop`;
+- état transmis dans `GameStateSnapshotPacket`;
+- rendu côté client dans `GameRenderer`.
+
+### Pourquoi
+Le laser détruit des astéroïdes et modifie le score. Ces effets doivent donc être
+validés côté serveur pour éviter les divergences entre clients. Le client garde
+uniquement la responsabilité du rendu et du HUD.
+
+### Alternatives écartées
+- Activation purement client : plus simple visuellement, mais incorrecte pour les collisions et le score.
+- Nouveau paquet dédié `ActivateLaserPacket` : inutile ici, car `PlayerInputPacket`
+  transporte déjà les intentions de gameplay à haute fréquence.
+- Laser comme projectile géant : moins adapté, car l'effet attendu est un rayon continu temporaire.
+

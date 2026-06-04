@@ -22,11 +22,14 @@ public readonly struct PlayerInputState
     /// <summary>Shift ou E — activation du dash (US-11).</summary>
     public bool Dash           { get; init; }
 
+    /// <summary>C - activation du power-up laser.</summary>
+    public bool Laser          { get; init; }
+
     public bool SpectateNext   { get; init; }
 
     public bool SpectatePrevious { get; init; }
 
     /// <summary>Indique si au moins une touche est active.</summary>
     public bool IsAnyKeyPressed =>
-        ThrustForward || RotateLeft || RotateRight || Fire || Dash || SpectateNext || SpectatePrevious;
+        ThrustForward || RotateLeft || RotateRight || Fire || Dash || Laser || SpectateNext || SpectatePrevious;
 }

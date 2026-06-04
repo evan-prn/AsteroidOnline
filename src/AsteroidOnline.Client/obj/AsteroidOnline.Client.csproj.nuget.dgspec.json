@@ -82,12 +82,6 @@
               "target": "Package",
               "version": "[8.2.1, )"
             },
-            "Microsoft.NET.ILLink.Tasks": {
-              "suppressParent": "All",
-              "target": "Package",
-              "version": "[10.0.8, )",
-              "autoReferenced": true
-            },
             "NAudio": {
               "target": "Package",
               "version": "[2.2.1, )"
@@ -106,15 +100,15 @@
           "warn": true,
           "downloadDependencies": [
             {
-              "name": "Microsoft.AspNetCore.App.Runtime.win-x64",
+              "name": "Microsoft.AspNetCore.App.Runtime.osx-arm64",
               "version": "[10.0.8, 10.0.8]"
             },
             {
-              "name": "Microsoft.NETCore.App.Runtime.win-x64",
+              "name": "Microsoft.NETCore.App.Host.osx-arm64",
               "version": "[10.0.8, 10.0.8]"
             },
             {
-              "name": "Microsoft.WindowsDesktop.App.Runtime.win-x64",
+              "name": "Microsoft.NETCore.App.Runtime.osx-arm64",
               "version": "[10.0.8, 10.0.8]"
             }
           ],
@@ -401,7 +395,7 @@
         }
       },
       "runtimes": {
-        "win-x64": {
+        "osx-arm64": {
           "#import": []
         }
       }
@@ -447,14 +441,6 @@
         "net10.0": {
           "framework": "net10.0",
           "targetAlias": "net10.0",
-          "dependencies": {
-            "Microsoft.NET.ILLink.Tasks": {
-              "suppressParent": "All",
-              "target": "Package",
-              "version": "[10.0.8, )",
-              "autoReferenced": true
-            }
-          },
           "imports": [
             "net461",
             "net462",
@@ -468,15 +454,11 @@
           "warn": true,
           "downloadDependencies": [
             {
-              "name": "Microsoft.AspNetCore.App.Runtime.win-x64",
+              "name": "Microsoft.AspNetCore.App.Runtime.osx-arm64",
               "version": "[10.0.8, 10.0.8]"
             },
             {
-              "name": "Microsoft.NETCore.App.Runtime.win-x64",
-              "version": "[10.0.8, 10.0.8]"
-            },
-            {
-              "name": "Microsoft.WindowsDesktop.App.Runtime.win-x64",
+              "name": "Microsoft.NETCore.App.Runtime.osx-arm64",
               "version": "[10.0.8, 10.0.8]"
             }
           ],
@@ -763,7 +745,7 @@
         }
       },
       "runtimes": {
-        "win-x64": {
+        "osx-arm64": {
           "#import": []
         }
       }
@@ -816,14 +798,6 @@
         "net10.0": {
           "framework": "net10.0",
           "targetAlias": "net10.0",
-          "dependencies": {
-            "Microsoft.NET.ILLink.Tasks": {
-              "suppressParent": "All",
-              "target": "Package",
-              "version": "[10.0.8, )",
-              "autoReferenced": true
-            }
-          },
           "imports": [
             "net461",
             "net462",
@@ -837,15 +811,11 @@
           "warn": true,
           "downloadDependencies": [
             {
-              "name": "Microsoft.AspNetCore.App.Runtime.win-x64",
+              "name": "Microsoft.AspNetCore.App.Runtime.osx-arm64",
               "version": "[10.0.8, 10.0.8]"
             },
             {
-              "name": "Microsoft.NETCore.App.Runtime.win-x64",
-              "version": "[10.0.8, 10.0.8]"
-            },
-            {
-              "name": "Microsoft.WindowsDesktop.App.Runtime.win-x64",
+              "name": "Microsoft.NETCore.App.Runtime.osx-arm64",
               "version": "[10.0.8, 10.0.8]"
             }
           ],
@@ -1132,7 +1102,7 @@
         }
       },
       "runtimes": {
-        "win-x64": {
+        "osx-arm64": {
           "#import": []
         }
       }
@@ -1189,12 +1159,6 @@
             "LiteNetLib": {
               "target": "Package",
               "version": "[2.1.2, )"
-            },
-            "Microsoft.NET.ILLink.Tasks": {
-              "suppressParent": "All",
-              "target": "Package",
-              "version": "[10.0.8, )",
-              "autoReferenced": true
             }
           },
           "imports": [
@@ -1210,15 +1174,11 @@
           "warn": true,
           "downloadDependencies": [
             {
-              "name": "Microsoft.AspNetCore.App.Runtime.win-x64",
+              "name": "Microsoft.AspNetCore.App.Runtime.osx-arm64",
               "version": "[10.0.8, 10.0.8]"
             },
             {
-              "name": "Microsoft.NETCore.App.Runtime.win-x64",
-              "version": "[10.0.8, 10.0.8]"
-            },
-            {
-              "name": "Microsoft.WindowsDesktop.App.Runtime.win-x64",
+              "name": "Microsoft.NETCore.App.Runtime.osx-arm64",
               "version": "[10.0.8, 10.0.8]"
             }
           ],
@@ -1505,7 +1465,7 @@
         }
       },
       "runtimes": {
-        "win-x64": {
+        "osx-arm64": {
           "#import": []
         }
       }
@@ -1555,14 +1515,6 @@
         "net10.0": {
           "framework": "net10.0",
           "targetAlias": "net10.0",
-          "dependencies": {
-            "Microsoft.NET.ILLink.Tasks": {
-              "suppressParent": "All",
-              "target": "Package",
-              "version": "[10.0.8, )",
-              "autoReferenced": true
-            }
-          },
           "imports": [
             "net461",
             "net462",
@@ -1576,15 +1528,11 @@
           "warn": true,
           "downloadDependencies": [
             {
-              "name": "Microsoft.AspNetCore.App.Runtime.win-x64",
+              "name": "Microsoft.AspNetCore.App.Runtime.osx-arm64",
               "version": "[10.0.8, 10.0.8]"
             },
             {
-              "name": "Microsoft.NETCore.App.Runtime.win-x64",
-              "version": "[10.0.8, 10.0.8]"
-            },
-            {
-              "name": "Microsoft.WindowsDesktop.App.Runtime.win-x64",
+              "name": "Microsoft.NETCore.App.Runtime.osx-arm64",
               "version": "[10.0.8, 10.0.8]"
             }
           ],
@@ -1871,7 +1819,7 @@
         }
       },
       "runtimes": {
-        "win-x64": {
+        "osx-arm64": {
           "#import": []
         }
       }

@@ -92,6 +92,27 @@ public sealed class CollisionSystem
         return null;
     }
 
+    /// <summary>
+    /// Teste si un vaisseau recupere un power-up actif.
+    /// </summary>
+    public PowerUp? CheckShipVsPowerUps(Ship ship, IEnumerable<PowerUp> powerUps)
+    {
+        if (!ship.IsAlive)
+            return null;
+
+        foreach (var powerUp in powerUps)
+        {
+            if (!powerUp.IsActive)
+                continue;
+
+            if (Overlaps(ship.Position, ship.CollisionRadius,
+                         powerUp.Position, powerUp.CollisionRadius))
+                return powerUp;
+        }
+
+        return null;
+    }
+
     // ──── Helpers ─────────────────────────────────────────────────────────────
 
     /// <summary>

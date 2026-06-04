@@ -19,7 +19,7 @@
             BorderThickness="1">
       <Grid ColumnDefinitions="*,Auto">
         <StackPanel Spacing="5">
-          <TextBlock Text="CO-OP LOBBY"
+          <TextBlock Text="Lobby"
                      FontSize="34"
                      FontWeight="Bold"
                      LetterSpacing="3"

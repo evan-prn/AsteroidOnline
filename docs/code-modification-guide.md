@@ -1,4 +1,4 @@
-# Guide des points de modification majeurs
+﻿# Guide des points de modification majeurs
 
 Ce document indique ou modifier les fonctionnalites importantes du jeu sans repartir de zero. Le projet est organise autour d'un serveur autoritaire : les regles de gameplay doivent donc etre changees cote `Domain` ou `Server`, tandis que le client gere surtout l'affichage, l'audio, les inputs locaux et l'UX.
 
@@ -251,6 +251,35 @@ Dans `Projectile.cs` :
 
 Point d'attention : reduire le cooldown ou augmenter la duree de vie augmente le nombre de projectiles actifs, donc la charge collision et reseau.
 
+## Modifier le power-up laser
+
+Points principaux :
+
+- `src/AsteroidOnline.Domain/Entities/PowerUp.cs`
+- `src/AsteroidOnline.Domain/Entities/PowerUpType.cs`
+- `src/AsteroidOnline.Domain/Entities/Ship.cs`
+- `src/AsteroidOnline.Server/Services/AsteroidSpawnService.cs`
+- `src/AsteroidOnline.Server/GameLoop.cs`
+- `src/AsteroidOnline.Shared/Packets/PlayerInputPacket.cs`
+- `src/AsteroidOnline.Shared/Packets/GameStateSnapshotPacket.cs`
+- `src/AsteroidOnline.Client/Input/InputHandler.cs`
+- `src/AsteroidOnline.Client/Rendering/GameRenderer.cs`
+- `src/AsteroidOnline.Client/Views/GameView.axaml`
+
+Reglages actuels :
+
+- Touche : `C`, definie dans `InputHandler.cs`.
+- Taux de drop : `PowerUpDropChance = 0.15f` dans `AsteroidSpawnService.cs`.
+- Duree active : `LaserDurationSeconds = 2.5f` dans `GameLoop.cs`.
+- Portee du rayon : `LaserLength = 1400f` dans `GameLoop.cs`, en unites de monde.
+- Stockage joueur : `LaserCharges`, `LaserRemaining`, `IsLaserActive` dans `Ship.cs`.
+- Charges maximum : `3`, limitee dans `GameLoop.ApplyPowerUp(...)`.
+
+Le laser est serveur autoritaire. Pour changer ses degats, sa duree ou sa portee,
+modifier `GameLoop.cs`. Pour changer son rendu, modifier `GameRenderer.cs`.
+Pour changer sa touche, modifier `InputHandler.cs` puis verifier que
+`PlayerInputPacket.cs` transporte toujours l'intention `Laser`.
+
 ## Modifier le dash
 
 Point principal :
@@ -422,3 +451,4 @@ Toute modification de cycle doit verifier le scenario complet : lancement, fin d
 - Verifier l'impact solo et multijoueur.
 - Verifier le retour lobby puis relance de partie.
 - Mettre a jour la documentation si la feature devient configurable ou change de comportement.
+

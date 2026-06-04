@@ -122,3 +122,16 @@ appsettings.Development.json
 secrets.json
 .env
 .env.*
+releases/**/*.zip
+
+# Release archives
+releases/
+*.zip
+bin/
+obj/
+
+# Build and release artifacts
+releases/
+*.zip
+bin/
+obj/

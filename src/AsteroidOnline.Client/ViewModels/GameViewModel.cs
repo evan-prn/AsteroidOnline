@@ -69,6 +69,10 @@ public partial class GameViewModel : ViewModelBase, IDisposable
     [ObservableProperty] private bool _isDashReady = true;
     [ObservableProperty] private bool _isInvulnerable;
     [ObservableProperty] private double _invulnerabilitySecondsRemaining;
+    [ObservableProperty] private int _laserCharges;
+    [ObservableProperty] private double _laserSecondsRemaining;
+    [ObservableProperty] private bool _isLaserActive;
+    [ObservableProperty] private bool _hasLaserCharge;
     [ObservableProperty] private bool _isSpectating;
     [ObservableProperty] private string _spectatedPlayerName = string.Empty;
 
@@ -165,6 +169,7 @@ public partial class GameViewModel : ViewModelBase, IDisposable
             RotateRight = !isSpectating && inputState.RotateRight,
             Fire = !isSpectating && inputState.Fire,
             Dash = !isSpectating && inputState.Dash,
+            Laser = !isSpectating && inputState.Laser,
             Timestamp = now,
         });
 
@@ -300,6 +305,10 @@ public partial class GameViewModel : ViewModelBase, IDisposable
                 MyLives = mySnap.LivesRemaining;
                 IsInvulnerable = mySnap.IsInvulnerable;
                 InvulnerabilitySecondsRemaining = mySnap.InvulnerabilityRemaining;
+                LaserCharges = mySnap.LaserCharges;
+                LaserSecondsRemaining = mySnap.LaserRemaining;
+                IsLaserActive = mySnap.IsLaserActive;
+                HasLaserCharge = mySnap.LaserCharges > 0;
             }
 
             MyRank = ComputeRank(packet, LocalPlayerId);
@@ -391,6 +400,7 @@ public partial class GameViewModel : ViewModelBase, IDisposable
         _renderSnapshot.Players.Clear();
         _renderSnapshot.Asteroids.Clear();
         _renderSnapshot.Projectiles.Clear();
+        _renderSnapshot.PowerUps.Clear();
 
         foreach (var p in current.Players)
         {
@@ -409,6 +419,9 @@ public partial class GameViewModel : ViewModelBase, IDisposable
             target.LivesRemaining = p.LivesRemaining;
             target.IsInvulnerable = p.IsInvulnerable;
             target.InvulnerabilityRemaining = p.InvulnerabilityRemaining;
+            target.LaserCharges = p.LaserCharges;
+            target.LaserRemaining = p.LaserRemaining;
+            target.IsLaserActive = p.IsLaserActive;
             _renderSnapshot.Players.Add(target);
         }
 
@@ -434,6 +447,17 @@ public partial class GameViewModel : ViewModelBase, IDisposable
             target.Y = LerpWrapped(pr0?.Y ?? pr.Y, pr.Y, alpha, WorldBounds.Default.Height);
             target.OwnerId = pr.OwnerId;
             _renderSnapshot.Projectiles.Add(target);
+        }
+
+        foreach (var powerUp in current.PowerUps)
+        {
+            _renderSnapshot.PowerUps.Add(new PowerUpSnapshot
+            {
+                Id = powerUp.Id,
+                X = powerUp.X,
+                Y = powerUp.Y,
+                Type = powerUp.Type,
+            });
         }
 
         PruneRenderCache(_renderPlayersById, current.Players);

@@ -1,4 +1,4 @@
-namespace AsteroidOnline.Server.Services;
+﻿namespace AsteroidOnline.Server.Services;
 
 using System.Numerics;
 using AsteroidOnline.Domain.Entities;
@@ -16,7 +16,7 @@ public sealed class AsteroidSpawnService
     private int _nextId;
 
     // Probabilité de lâcher un power-up à la destruction (US-17).
-    private const float PowerUpDropChance = 0.20f;
+    private const float PowerUpDropChance = 0.10f;
 
     /// <summary>
     /// Initialise le service avec les dimensions du monde.
@@ -164,9 +164,11 @@ public sealed class AsteroidSpawnService
         IsActive        = true,
     };
 
-    /// <summary>RÃ©initialise le gÃ©nÃ©rateur d'identifiants pour une nouvelle manche.</summary>
+    /// <summary>Réinitialise le générateur d'identifiants pour une nouvelle manche.</summary>
     public void Reset()
     {
         _nextId = 1000;
     }
 }
+
+

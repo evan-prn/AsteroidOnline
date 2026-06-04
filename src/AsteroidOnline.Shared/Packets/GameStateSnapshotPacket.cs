@@ -21,6 +21,9 @@ public sealed class PlayerSnapshot
     public int LivesRemaining { get; set; }
     public bool IsInvulnerable { get; set; }
     public float InvulnerabilityRemaining { get; set; }
+    public int LaserCharges { get; set; }
+    public float LaserRemaining { get; set; }
+    public bool IsLaserActive { get; set; }
 }
 
 /// <summary>
@@ -48,6 +51,17 @@ public sealed class ProjectileSnapshot
 }
 
 /// <summary>
+/// Snapshot d'un power-up collectable actif.
+/// </summary>
+public sealed class PowerUpSnapshot
+{
+    public int Id { get; set; }
+    public float X { get; set; }
+    public float Y { get; set; }
+    public PowerUpType Type { get; set; }
+}
+
+/// <summary>
 /// Snapshot UDP compact du monde.
 /// Les positions et vitesses sont quantifiees pour rester sous la limite de paquet LiteNetLib.
 /// </summary>
@@ -62,6 +76,7 @@ public class GameStateSnapshotPacket : IPacket
     public List<PlayerSnapshot> Players { get; set; } = new();
     public List<AsteroidSnapshot> Asteroids { get; set; } = new();
     public List<ProjectileSnapshot> Projectiles { get; set; } = new();
+    public List<PowerUpSnapshot> PowerUps { get; set; } = new();
 
     public void Serialize(BinaryWriter writer)
     {
@@ -84,12 +99,16 @@ public class GameStateSnapshotPacket : IPacket
                 flags |= 0x01;
             if (p.IsInvulnerable)
                 flags |= 0x02;
+            if (p.IsLaserActive)
+                flags |= 0x04;
             writer.Write(flags);
 
             writer.Write((byte)Math.Clamp((int)MathF.Round(p.DashCooldownProgress * 255f), 0, 255));
             writer.Write((ushort)Math.Clamp(p.Score, 0, ushort.MaxValue));
             writer.Write((byte)Math.Clamp(p.LivesRemaining, 0, byte.MaxValue));
             writer.Write((byte)Math.Clamp((int)MathF.Round(p.InvulnerabilityRemaining * 10f), 0, byte.MaxValue));
+            writer.Write((byte)Math.Clamp(p.LaserCharges, 0, byte.MaxValue));
+            writer.Write((byte)Math.Clamp((int)MathF.Round(p.LaserRemaining * 10f), 0, byte.MaxValue));
         }
 
         writer.Write((byte)Math.Clamp(Asteroids.Count, 0, byte.MaxValue));
@@ -110,6 +129,15 @@ public class GameStateSnapshotPacket : IPacket
             writer.Write(QuantizePosition(projectile.X, WorldBounds.Default.Width));
             writer.Write(QuantizePosition(projectile.Y, WorldBounds.Default.Height));
             writer.Write((byte)Math.Clamp(projectile.OwnerId, 0, byte.MaxValue));
+        }
+
+        writer.Write((byte)Math.Clamp(PowerUps.Count, 0, byte.MaxValue));
+        foreach (var powerUp in PowerUps)
+        {
+            writer.Write((ushort)Math.Clamp(powerUp.Id, 0, ushort.MaxValue));
+            writer.Write(QuantizePosition(powerUp.X, WorldBounds.Default.Width));
+            writer.Write(QuantizePosition(powerUp.Y, WorldBounds.Default.Height));
+            writer.Write((byte)powerUp.Type);
         }
     }
 
@@ -134,6 +162,8 @@ public class GameStateSnapshotPacket : IPacket
             var score = reader.ReadUInt16();
             var lives = reader.ReadByte();
             var invulnerability = reader.ReadByte() / 10f;
+            var laserCharges = reader.ReadByte();
+            var laserRemaining = reader.ReadByte() / 10f;
 
             Players.Add(new PlayerSnapshot
             {
@@ -150,6 +180,9 @@ public class GameStateSnapshotPacket : IPacket
                 Score = score,
                 LivesRemaining = lives,
                 InvulnerabilityRemaining = invulnerability,
+                LaserCharges = laserCharges,
+                LaserRemaining = laserRemaining,
+                IsLaserActive = (flags & 0x04) != 0,
             });
         }
 
@@ -178,6 +211,19 @@ public class GameStateSnapshotPacket : IPacket
                 X = DequantizePosition(reader.ReadUInt16(), WorldBounds.Default.Width),
                 Y = DequantizePosition(reader.ReadUInt16(), WorldBounds.Default.Height),
                 OwnerId = reader.ReadByte(),
+            });
+        }
+
+        var powerUpCount = reader.ReadByte();
+        PowerUps.Clear();
+        for (var i = 0; i < powerUpCount; i++)
+        {
+            PowerUps.Add(new PowerUpSnapshot
+            {
+                Id = reader.ReadUInt16(),
+                X = DequantizePosition(reader.ReadUInt16(), WorldBounds.Default.Width),
+                Y = DequantizePosition(reader.ReadUInt16(), WorldBounds.Default.Height),
+                Type = (PowerUpType)reader.ReadByte(),
             });
         }
     }

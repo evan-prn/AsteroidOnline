@@ -50,7 +50,20 @@
 - [ ] Score, vies et invulnérabilité restent cohérents.
 - [ ] Aucun blocage de navigation entre vues.
 
-## H. Mode spectateur
+## H. Power-up laser
+- [ ] Un power-up laser apparaît rarement après destruction d'astéroïdes Large/Medium.
+- [ ] Le taux observé reste rare et cohérent avec `15%` sur une longue session.
+- [ ] Le bonus est visible sur la map et sur le radar.
+- [ ] Le joueur récupère une charge en passant dessus.
+- [ ] Le HUD affiche le nombre de charges laser.
+- [ ] `C` active le laser si une charge est disponible.
+- [ ] Le laser reste actif environ `2.5` secondes.
+- [ ] Le rayon détruit rapidement les astéroïdes traversés.
+- [ ] Le laser ne fait pas de dégâts aux autres joueurs.
+- [ ] Le score augmente correctement lors des destructions par laser.
+- [ ] Le retour lobby puis relance réinitialise les charges, power-ups au sol et laser actif.
+
+## I. Mode spectateur
 - [ ] Un joueur éliminé passe en spectateur si d'autres joueurs sont encore vivants.
 - [ ] La caméra suit un joueur vivant.
 - [ ] `Tab` ou `PageDown` change vers le joueur vivant suivant.
@@ -59,9 +72,10 @@
 - [ ] Les tirs/dash/pilotage ne contrôlent plus le joueur éliminé.
 - [ ] Le mode spectateur ne se déclenche pas pendant une simple perte de vie avec respawn.
 
-## I. Connexion et fin de partie
+## J. Connexion et fin de partie
 - [ ] Les champs pseudo, IP et port restent lisibles lorsqu'ils sont focus.
 - [ ] Les champs pseudo, IP et port restent lisibles sur un écran à scaling Windows élevé.
 - [ ] L'écran de fin affiche un classement final complet.
 - [ ] Le classement final est trié par score décroissant.
 - [ ] Le classement affiche le statut survivant/éliminé.
+

@@ -41,12 +41,16 @@ public sealed class GameRenderer
     private static readonly IBrush WhiteBrush = Brushes.White;
     private static readonly IBrush TransparentBrush = Brushes.Transparent;
     private static readonly IBrush ProjectileBrush = new SolidColorBrush(Color.Parse("#FFF385"));
+    private static readonly IBrush LaserPowerUpBrush = new SolidColorBrush(Color.FromArgb(220, 92, 255, 255));
     private static readonly IBrush RadarAsteroidBrush = new SolidColorBrush(Color.Parse("#FFAE6B"));
+    private static readonly IBrush RadarPowerUpBrush = new SolidColorBrush(Color.Parse("#7FFFFF"));
     private static readonly IBrush RadarLocalPlayerBrush = new SolidColorBrush(Color.Parse("#7BFF7E"));
     private static readonly IBrush RadarRemotePlayerBrush = new SolidColorBrush(Color.Parse("#E9F2FF"));
     private static readonly Pen ProjectileGlowPen = new(new SolidColorBrush(Color.FromArgb(120, 255, 255, 255)), 0.8);
     private static readonly Pen ProjectileTrailPen = new(new SolidColorBrush(Color.FromArgb(150, 255, 243, 133)), 1.4);
     private static readonly Pen AsteroidPen = new(new SolidColorBrush(Color.FromArgb(180, 255, 222, 180)), 1.2);
+    private static readonly Pen LaserCorePen = new(new SolidColorBrush(Color.FromArgb(235, 235, 255, 255)), 3.0);
+    private static readonly Pen LaserGlowPen = new(new SolidColorBrush(Color.FromArgb(90, 84, 245, 255)), 12.0);
     private static readonly Pen RadarFramePen = new(new SolidColorBrush(Color.FromArgb(180, 255, 199, 109)), 1.2);
     private static readonly IBrush RadarBackgroundBrush = new SolidColorBrush(Color.FromArgb(95, 8, 13, 25));
     private static readonly IReadOnlyDictionary<PlayerColor, Color> ShipColors =
@@ -108,6 +112,12 @@ public sealed class GameRenderer
 
         foreach (var projectile in _snapshot.Projectiles)
             DrawProjectile(context, projectile, cameraPos, scale, screenCenter, bounds, surfaceSize);
+
+        foreach (var powerUp in _snapshot.PowerUps)
+            DrawPowerUp(context, powerUp, cameraPos, scale, screenCenter, bounds, surfaceSize);
+
+        foreach (var ship in _snapshot.Players)
+            DrawLaser(context, ship, cameraPos, scale, screenCenter, bounds, surfaceSize);
 
         foreach (var ship in _snapshot.Players)
             DrawShip(
@@ -280,6 +290,55 @@ public sealed class GameRenderer
         context.DrawEllipse(ProjectileBrush, ProjectileGlowPen, center, radius, radius);
     }
 
+    private void DrawPowerUp(DrawingContext context, PowerUpSnapshot powerUp, Vector2 cameraPos, double scale,
+        Point screenCenter, in WorldBounds bounds, Size surfaceSize)
+    {
+        var center = ToScreen(new Vector2(powerUp.X, powerUp.Y), cameraPos, scale, screenCenter, bounds);
+        var radius = 16.0 * scale;
+        if (!IsOnScreen(center, radius * 3, surfaceSize))
+            return;
+
+        var pulse = 0.75 + (Math.Sin(Environment.TickCount64 / 120.0) * 0.25);
+        context.DrawEllipse(
+            new SolidColorBrush(Color.FromArgb(60, 92, 255, 255)),
+            new Pen(new SolidColorBrush(Color.FromArgb(180, 127, 255, 255)), 1.5),
+            center,
+            radius * (1.4 + pulse),
+            radius * (1.4 + pulse));
+
+        var inner = radius * 0.72;
+        context.DrawRectangle(
+            LaserPowerUpBrush,
+            new Pen(WhiteBrush, 1),
+            new Rect(center.X - inner, center.Y - inner, inner * 2, inner * 2),
+            5,
+            5);
+
+        var text = CreateText("L", Math.Max(10, 14 * scale), Brushes.Black);
+        context.DrawText(text, new Point(center.X - (text.Width / 2), center.Y - (text.Height / 2)));
+    }
+
+    private void DrawLaser(DrawingContext context, PlayerSnapshot ship, Vector2 cameraPos, double scale,
+        Point screenCenter, in WorldBounds bounds, Size surfaceSize)
+    {
+        if (!ship.IsAlive || !ship.IsLaserActive)
+            return;
+
+        const float laserLength = 1400f;
+        var origin = new Vector2(ship.X, ship.Y);
+        var direction = new Vector2(MathF.Sin(ship.Rotation), -MathF.Cos(ship.Rotation));
+        var end = origin + (direction * laserLength);
+        var startScreen = ToScreen(origin, cameraPos, scale, screenCenter, bounds);
+        var endScreen = ToScreen(WrapPosition(end, bounds), cameraPos, scale, screenCenter, bounds);
+
+        if (!IsOnScreen(startScreen, laserLength * scale, surfaceSize)
+            && !IsOnScreen(endScreen, laserLength * scale, surfaceSize))
+            return;
+
+        context.DrawLine(LaserGlowPen, startScreen, endScreen);
+        context.DrawLine(LaserCorePen, startScreen, endScreen);
+    }
+
     private void DrawRadar(DrawingContext context, GameStateSnapshotPacket snapshot, int localPlayerId, Size surfaceSize)
     {
         const double radarSize = 130;
@@ -305,6 +364,12 @@ public sealed class GameRenderer
             var brush = player.Id == localPlayerId ? RadarLocalPlayerBrush : RadarRemotePlayerBrush;
             var dotSize = player.Id == localPlayerId ? 1.9 : 1.4;
             context.DrawEllipse(brush, null, p, dotSize, dotSize);
+        }
+
+        foreach (var powerUp in snapshot.PowerUps)
+        {
+            var p = ToRadarPoint(powerUp.X, powerUp.Y, left, top, radarSize);
+            context.DrawEllipse(RadarPowerUpBrush, null, p, 2.2, 2.2);
         }
     }
 
@@ -475,6 +540,15 @@ public sealed class GameRenderer
             dy -= MathF.Sign(dy) * bounds.Height;
 
         return new Vector2(dx, dy);
+    }
+
+    private static Vector2 WrapPosition(Vector2 position, in WorldBounds bounds)
+    {
+        while (position.X < 0f) position.X += bounds.Width;
+        while (position.X >= bounds.Width) position.X -= bounds.Width;
+        while (position.Y < 0f) position.Y += bounds.Height;
+        while (position.Y >= bounds.Height) position.Y -= bounds.Height;
+        return position;
     }
 
     private static bool IsOnScreen(Point p, double margin, Size surfaceSize)
